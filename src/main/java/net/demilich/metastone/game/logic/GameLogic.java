@@ -80,6 +80,7 @@ import net.demilich.metastone.game.targeting.IdFactory;
 import net.demilich.metastone.game.targeting.TargetSelection;
 import net.demilich.metastone.utils.MathUtils;
 
+
 public class GameLogic implements Cloneable {
 
 	public static Logger logger = LoggerFactory.getLogger(GameLogic.class);
@@ -539,7 +540,7 @@ public class GameLogic implements Cloneable {
 			player.getStatistics().fatigueDamage(fatigue);
 			return null;
 		}
-
+               
 		Card card = deck.getRandom();
 		return drawCard(playerId, card, source);
 	}
@@ -1284,6 +1285,7 @@ public class GameLogic implements Cloneable {
 		player.getHand().remove(card);
 		player.getGraveyard().add(card);
 	}
+
 	
 	public void removeCardFromDeck(int playerID, Card card) {
 		Player player = context.getPlayer(playerID);
@@ -1411,6 +1413,7 @@ public class GameLogic implements Cloneable {
 		card.setLocation(CardLocation.DECK);
 
 		if (player.getDeck().getCount() < MAX_DECK_SIZE) {
+                        
 			player.getDeck().addRandomly(card);
 			log("Card {} has been shuffled to {}'s deck", card, player.getName());
 		}

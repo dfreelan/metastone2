@@ -11,19 +11,22 @@ import java.util.function.Predicate;
 public class CardCollection implements Iterable<Card>, Cloneable {
 
 	private List<Card> cards = new ArrayList<Card>();
-
+        private boolean shuffled = false;
+        
 	public CardCollection() {
 
 	}
 
 	public void add(Card card) {
 		cards.add(card);
+                shuffled = false;
 	}
 
 	public void addAll(CardCollection cardCollection) {
 		for (Card card : cardCollection) {
 			cards.add(card.clone());
 		}
+                shuffled = false;
 	}
 	
 	public void addRandomly(Card card) {
@@ -33,10 +36,11 @@ public class CardCollection implements Iterable<Card>, Cloneable {
 
 	public CardCollection clone() {
 		CardCollection clone = new CardCollection();
+                
 		for (Card card : cards) {
 			clone.add(card.clone());
 		}
-
+                clone.shuffled = this.shuffled;
 		return clone;
 	}
 
@@ -51,12 +55,16 @@ public class CardCollection implements Iterable<Card>, Cloneable {
 	public int getCount() {
 		return cards.size();
 	}
-
+        
 	public Card getRandom() {
+                
 		if (cards.isEmpty()) {
 			return null;
 		}
-		return cards.get(ThreadLocalRandom.current().nextInt(cards.size()));
+                if(!shuffled){
+                   shuffle(); 
+                }
+		return cards.get(0);
 	}
 
 	public Card getRandomOfType(CardType cardType) {
@@ -112,9 +120,11 @@ public class CardCollection implements Iterable<Card>, Cloneable {
 
 	public void shuffle() {
 		Collections.shuffle(cards);
+                shuffled = true;
 	}
 
 	public void sortByManaCost() {
+            shuffled = false;
 		Comparator<Card> manaComparator = new Comparator<Card>() {
 
 			@Override
@@ -128,6 +138,7 @@ public class CardCollection implements Iterable<Card>, Cloneable {
 	}
 
 	public void sortByName() {
+                shuffled = false;
 		cards.sort((card1, card2) -> card1.getName().compareTo(card2.getName()));
 	}
 

@@ -22,6 +22,7 @@ public class DoNothingBehaviour extends Behaviour {
 
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
+		System.err.println("do ntihing action");
 		return validActions.get(validActions.size() - 1);
 	}
 

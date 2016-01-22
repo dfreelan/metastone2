@@ -54,12 +54,12 @@ public class DiscoverRandomCardSpell extends Spell {
 		int count = desc.getInt(SpellArg.HOW_MANY, 3);
 		for (int i = 0; i < count; i++) {
 			if (!result.isEmpty()) {
-				Card card = null;
-				do {
+				Card card = result.getRandom();
+				while(cards.contains(card)){
 					card = result.getRandom();
-					cards.remove(card);
-				} while (cards.contains(card));
+                                }
 				cards.add(card);
+                                result.remove(card);
 			}
 		}
 		

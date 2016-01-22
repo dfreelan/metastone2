@@ -90,6 +90,7 @@ public class GreedyOptimizeTurn extends Behaviour {
 
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
+		System.err.println("ame has requested I take an action");
 		if (validActions.size() == 1) {
 			heuristic.onActionSelected(context, player.getId());
 			return validActions.get(0);

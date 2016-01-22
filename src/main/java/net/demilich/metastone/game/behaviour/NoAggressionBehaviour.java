@@ -23,6 +23,7 @@ public class NoAggressionBehaviour extends Behaviour {
 
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
+		System.err.println("no aggre4ssion");
 		if (validActions.size() == 1) {
 			return validActions.get(0);
 		}

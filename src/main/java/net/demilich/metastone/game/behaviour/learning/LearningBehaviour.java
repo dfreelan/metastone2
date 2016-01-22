@@ -61,7 +61,7 @@ public class LearningBehaviour extends Behaviour {
 
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
-
+		System.err.println("learning behavior");
 		// for now, do not evaluate battecry actions
 		if (validActions.get(0).getActionType() == ActionType.BATTLECRY) {
 			return validActions.get(context.getLogic().random(validActions.size()));

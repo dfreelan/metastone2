@@ -59,6 +59,11 @@ public class BattlecryAction extends GameAction {
 		clone.setActionSuffix(getActionSuffix());
 		clone.setResolvedLate(isResolvedLate());
 		clone.setSource(getSource());
+                clone.setTargetKey(this.getTargetKey());
+                clone.setActionSuffix(this.getActionSuffix());
+                        /*private EntityReference source;
+	private EntityReference targetKey;
+	private String actionSuffix;*/
 		return clone;
 	}
 

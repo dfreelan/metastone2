@@ -110,7 +110,7 @@ public class TargetLogic {
 		logger.error("Id " + targetId + " not found!");
 		logger.error(context.toString());
 		logger.error(context.getEnvironment().toString());
-		throw new RuntimeException("Target not found exception: " + targetKey);
+		throw new RuntimeException("Target not found exception: " + targetKey + " " + context);
 	}
 
 	private Entity findInCards(Player player, int targetId) {

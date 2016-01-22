@@ -74,7 +74,6 @@ public class SimulateGamesCommand extends SimpleCommand<GameNotification> {
 				ExecutorService executor = Executors.newFixedThreadPool(cores);
 				// ExecutorService executor =
 				// Executors.newSingleThreadExecutor();
-
 				List<Future<Void>> futures = new ArrayList<Future<Void>>();
 				// send initial status update
 				Tuple<Integer, Integer> progress = new Tuple<>(0, gameConfig.getNumberOfGames());
@@ -137,5 +136,4 @@ public class SimulateGamesCommand extends SimpleCommand<GameNotification> {
 			result.getPlayer2Stats().merge(context.getPlayer2().getStatistics());
 		}
 	}
-
 }

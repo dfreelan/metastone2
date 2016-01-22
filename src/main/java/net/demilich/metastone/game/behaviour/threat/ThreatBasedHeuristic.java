@@ -49,7 +49,6 @@ public class ThreatBasedHeuristic implements IGameStateHeuristic {
 		} else if (remainingHp < 15) {
 			return ThreatLevel.YELLOW;
 		}
-
 		return ThreatLevel.GREEN;
 	}
 

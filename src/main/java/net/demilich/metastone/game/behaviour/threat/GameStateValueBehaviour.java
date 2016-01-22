@@ -37,7 +37,9 @@ public class GameStateValueBehaviour extends Behaviour {
 
 	private double alphaBeta(GameContext context, int playerId, GameAction action, int depth) {
 		GameContext simulation = context.clone();
-		simulation.getLogic().performGameAction(playerId, action);
+		simulation.getPlayer1().getDeck().shuffle();
+                simulation.getPlayer2().getDeck().shuffle();
+                simulation.getLogic().performGameAction(playerId, action);
 		if (depth == 0 || simulation.getActivePlayerId() != playerId || simulation.gameDecided()) {
 			return heuristic.getScore(simulation, playerId);
 		}
@@ -89,6 +91,8 @@ public class GameStateValueBehaviour extends Behaviour {
 
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
+		//System.err.println("behavior.threat");
+
 		if (validActions.size() == 1) {
 			return validActions.get(0);
 		}
@@ -109,7 +113,7 @@ public class GameStateValueBehaviour extends Behaviour {
 				bestScore = score;
 			}
 		}
-
+		//System.err.println("I chose " + bestAction  + " " + bestScore);
 		logger.debug("Selecting best action {} with score {}", bestAction, bestScore);
 
 		return bestAction;

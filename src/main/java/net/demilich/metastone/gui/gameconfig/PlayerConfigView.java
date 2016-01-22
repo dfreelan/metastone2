@@ -20,8 +20,11 @@ import net.demilich.metastone.game.behaviour.GreedyOptimizeMove;
 import net.demilich.metastone.game.behaviour.IBehaviour;
 import net.demilich.metastone.game.behaviour.NoAggressionBehaviour;
 import net.demilich.metastone.game.behaviour.PlayRandomBehaviour;
+import net.demilich.metastone.game.behaviour.PlayAllRandomBehavior;
+import net.demilich.metastone.game.behaviour.experimentalMCTS.ExperimentalMCTS;
 import net.demilich.metastone.game.behaviour.heuristic.WeightedHeuristic;
 import net.demilich.metastone.game.behaviour.human.HumanBehaviour;
+import net.demilich.metastone.game.behaviour.human.HumanDebugBehaviour;
 import net.demilich.metastone.game.behaviour.threat.GameStateValueBehaviour;
 import net.demilich.metastone.game.cards.Card;
 import net.demilich.metastone.game.cards.CardCatalogue;
@@ -147,20 +150,28 @@ public class PlayerConfigView extends VBox {
 	public void setupBehaviours() {
 		ObservableList<IBehaviour> behaviourList = FXCollections.observableArrayList();
 		if (selectionHint == PlayerConfigType.HUMAN || selectionHint == PlayerConfigType.SANDBOX) {
-			behaviourList.add(new HumanBehaviour());
+			behaviourList.add(new HumanDebugBehaviour());
 		}
 
 		behaviourList.add(new GameStateValueBehaviour());
 
 		if (selectionHint == PlayerConfigType.OPPONENT) {
-			behaviourList.add(new HumanBehaviour());
+			behaviourList.add(new HumanDebugBehaviour());
 		}
 
 		behaviourList.add(new PlayRandomBehaviour());
 
 		behaviourList.add(new GreedyOptimizeMove(new WeightedHeuristic()));
 		behaviourList.add(new NoAggressionBehaviour());
-
+                ExperimentalMCTS singleton = new ExperimentalMCTS(2500,1,1.25,false);
+                singleton.setName("2500 and 1 tree");
+		behaviourList.add(singleton);
+                
+                ExperimentalMCTS quadTree = new ExperimentalMCTS(2500,4,1.25,false);
+                quadTree.setName("quad 2500");
+		behaviourList.add(quadTree);
+                
+                behaviourList.add(new PlayAllRandomBehavior());
 		behaviourBox.setItems(behaviourList);
 		behaviourBox.valueProperty().addListener(this::onBehaviourChanged);
 	}

@@ -13,6 +13,7 @@ public class MetaStone extends Application {
 
 	public static void main(String[] args) {
 		//DevCardTools.formatJsons();
+		System.err.println("am playing");
 		launch(args);
 	}
 

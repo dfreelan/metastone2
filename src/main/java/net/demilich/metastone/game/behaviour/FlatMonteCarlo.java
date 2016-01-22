@@ -62,6 +62,7 @@ public class FlatMonteCarlo extends Behaviour {
 
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
+		System.err.println("flat monte call");
 		if (validActions.size() == 1) {
 			return validActions.get(0);
 		}

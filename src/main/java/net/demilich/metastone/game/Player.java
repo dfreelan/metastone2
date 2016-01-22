@@ -42,6 +42,7 @@ public class Player extends CustomCloneable {
 	private IBehaviour behaviour;
 
 	private Player(Player otherPlayer) {
+            
 		this.name = otherPlayer.name;
 		this.deckName = otherPlayer.getDeckName();
 		this.setHero(otherPlayer.getHero().clone());
@@ -71,7 +72,6 @@ public class Player extends CustomCloneable {
 		setBehaviour(config.getBehaviour().clone());
 		setHideCards(config.hideCards());
 	}
-
 	@Override
 	public Player clone() {
 		return new Player(this);

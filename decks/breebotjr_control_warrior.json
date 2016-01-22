@@ -1,6 +1,5 @@
 {
   "cards": [
-    "minion_ragnaros_the_firelord",
     "spell_shield_slam",
     "spell_shield_slam",
     "spell_whirlwind",
@@ -28,6 +27,7 @@
     "minion_emperor_thaurissan",
     "minion_baron_geddon",
     "minion_dr_boom",
+    "minion_ragnaros_the_firelord",
     "minion_grommash_hellscream",
     "minion_alexstrasza"
   ],

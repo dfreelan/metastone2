@@ -41,6 +41,7 @@ public class GreedyOptimizeMove extends Behaviour {
 
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
+		System.err.println("nah i'm calling this one");
 		if (validActions.size() == 1) {
 			return validActions.get(0);
 		}

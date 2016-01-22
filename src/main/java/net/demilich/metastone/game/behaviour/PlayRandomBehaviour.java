@@ -25,7 +25,8 @@ public class PlayRandomBehaviour extends Behaviour {
 
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
-		if (validActions.size() == 1) {
+
+                if (validActions.size() == 1) {
 			return validActions.get(0);
 		}
 
