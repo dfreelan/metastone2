@@ -93,9 +93,74 @@ public class GameContext implements Cloneable, IDisposable {
         for (CardCostModifier cardCostModifier : cardCostModifiers) {
             clone.cardCostModifiers.add(cardCostModifier.clone());
         }
-        for (Environment key : getEnvironment().keySet()) {
-            clone.getEnvironment().put(key, getEnvironment().get(key));
+        
+        /*	SUMMON_STACK,
+	SUMMONED_WEAPON,
+	KILLED_MINION,
+	PENDING_CARD,
+	TARGET_OVERRIDE,
+	ATTACKER,
+	EVENT_TARGET,
+	TARGET,
+	TRANSFORM,*/
+        HashMap cloneMap = clone.getEnvironment();
+        Stack<Minion> newStack = (Stack<Minion>)((Stack<Minion>)getEnvironment().get(Environment.SUMMON_STACK));
+        if(newStack!=null){
+            newStack = (Stack<Minion>)newStack.clone();
+            for(int i = 0; i<newStack.size(); i++){
+                newStack.set(i,(Minion)((Minion)newStack.get(i)).clone());
+            }
+            cloneMap.put(Environment.SUMMON_STACK, newStack);
         }
+        Card pending = (Card) getEnvironment().get(Environment.PENDING_CARD);
+        if(pending!=null){
+            pending = pending.clone();
+            cloneMap.put(Environment.PENDING_CARD, pending);
+        }
+        Entity summonedWeapon = (Entity)this.getEnvironment().get(Environment.SUMMONED_WEAPON);
+        if(summonedWeapon != null){
+            summonedWeapon = (Entity)summonedWeapon.clone();
+            cloneMap.put(Environment.SUMMONED_WEAPON, summonedWeapon);
+        }
+        
+        Entity targetOverride = (Entity)this.getEnvironment().get(Environment.TARGET_OVERRIDE);
+        if(targetOverride!=null){
+            targetOverride = (Entity)targetOverride.clone();
+            cloneMap.put(Environment.TARGET_OVERRIDE, targetOverride);
+        }
+        
+        Entity killedMinion = (Entity) this.getEnvironment().get(Environment.KILLED_MINION);
+        if(killedMinion != null){
+            killedMinion = (Entity)targetOverride.clone();
+            cloneMap.put(Environment.KILLED_MINION, killedMinion);
+        }
+        
+        Entity attacker = (Entity)this.getEnvironment().get(Environment.ATTACKER);
+        if(attacker!=null){
+            attacker = (Entity)attacker.clone();
+            cloneMap.put(Environment.ATTACKER, attacker);
+        }
+        /*EVENT_TARGET,
+	TARGET,
+	TRANSFORM*/
+        Entity eventTarget = (Entity)this.getEnvironment().get(Environment.EVENT_TARGET);
+        if(eventTarget !=null){
+            eventTarget = (Entity)eventTarget.clone();
+            cloneMap.put(Environment.EVENT_TARGET, eventTarget);
+        }
+        
+        Entity target = (Entity)this.getEnvironment().get(Environment.TARGET);
+        if(target !=null){
+            target = (Entity)target.clone();
+            cloneMap.put(Environment.TARGET, target);
+        }
+        
+        Minion transform = (Minion)this.getEnvironment().get(Environment.TRANSFORM);
+        if(transform!=null){
+            transform = transform.clone();
+            cloneMap.put(Environment.TRANSFORM, transform);
+        }
+        
         clone.getLogic().setLoggingEnabled(false);
         return clone;
     }

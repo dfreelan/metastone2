@@ -43,9 +43,11 @@ public class MCTSTreeNode {
     int activePlayer = -1;
     int winningPlayer = -1;
     double exploreFactor = 1.0;
+    GameContext parentContext;
     GameAction action;
     private boolean firstEndTurn = false;
-
+    GameAction parentAction;
+    GameContext preservedContext;
     public MCTSTreeNode(GameContext simulation, double exploreFactor, boolean firstEndTurn) {
         this.context = simulation;
         this.exploreFactor = exploreFactor;
@@ -54,11 +56,6 @@ public class MCTSTreeNode {
 
     }
 
-    private MCTSTreeNode(MCTSTreeNode select) {
-        this.context = select.context.clone();
-        this.actions = select.actions;
-        this.firstEndTurn = select.firstEndTurn;
-    }
 
     public void selectAction() {
         //context.play();
@@ -71,7 +68,7 @@ public class MCTSTreeNode {
         }
 
         double value;
-
+        //cur.preservedContext = cur.context.clone();
         if (!cur.context.gameDecided()) {
             cur.applyAction();
         }
@@ -108,11 +105,17 @@ public class MCTSTreeNode {
 
     public void applyAction() {
         if (action == null) {//this should only really happen for the root node.
+            this.action = parentAction;
             return;
         }
-
-        this.context = this.context.clone();
-
+        if(action.getActionType()==ActionType.BATTLECRY){
+            //this.context = parentContext;
+           // System.err.println("parent action was" + parentAction);
+          //  this.context.getLogic().performGameAction(this.context.getActivePlayerId(), parentAction);
+            this.context = this.context.clone();
+        }else{
+            this.context = this.context.clone();
+        }
         context.getLogic().performGameAction(context.getActivePlayerId(), action);
         if (action.getActionType() == ActionType.END_TURN) {
             context.startTurn(context.getActivePlayerId());
@@ -135,12 +138,19 @@ public class MCTSTreeNode {
         ArrayList<MCTSTreeNode> newNodes = new ArrayList<MCTSTreeNode>(actions.size());
 
         for (GameAction action : actions) {
-            MCTSTreeNode newNode = new MCTSTreeNode(context, exploreFactor, firstEndTurn);
+            MCTSTreeNode newNode = new MCTSTreeNode(context.clone(), exploreFactor, firstEndTurn);
             newNode.action = action;
             newNodes.add(newNode);
+            //newNode.parentContext = this.preservedContext;
+            //if(this.action!=null)
+            //newNode.parentAction = this.action.clone();
+            
+           
+            
         }
         children = newNodes;
         this.activePlayer = context.getActivePlayerId();
+        
         if (!firstEndTurn) {
             this.context = null;
         }

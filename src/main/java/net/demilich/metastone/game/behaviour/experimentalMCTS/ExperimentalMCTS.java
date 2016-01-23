@@ -3,6 +3,7 @@ package net.demilich.metastone.game.behaviour.experimentalMCTS;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 import net.demilich.metastone.game.GameContext;
 import net.demilich.metastone.game.Player;
@@ -35,10 +36,8 @@ import net.demilich.metastone.game.targeting.CardLocation;
 //now let's try
 //adding in mulltigan + averaging probabilities, not weighted average
 //literally same score without weighted average and with mulligan applied
-
 //removed mulligan
 //66:33 (2 game difference)
-
 //added in back mulligan, but now >4
 //with 60 and 10000 got 33:17
 //with 60 and 10000 got 34:16
@@ -57,7 +56,9 @@ public class ExperimentalMCTS extends Behaviour {
     double exploreFactor;
     private final boolean deterministic;
     String name = "Experimental MCTS";
-
+    public double[][] results;
+    GameContext prevContext;
+    GameAction prevAction;
     public ExperimentalMCTS(int numRollouts, int numTrees, double exploreFactor, boolean deterministic) {
         this.numTrees = numTrees;
         this.numRollouts = numRollouts;
@@ -87,7 +88,10 @@ public class ExperimentalMCTS extends Behaviour {
 
     @Override
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
-
+        this.prevContext = context.clone();
+        if (validActions.get(0).getActionType() == ActionType.BATTLECRY) {
+            System.err.println("NOPE");
+        }
         GameContext simulation = context.clone();
         for (int i = 0; i < validActions.size(); i++) {
             GameAction action = validActions.get(i);
@@ -103,60 +107,80 @@ public class ExperimentalMCTS extends Behaviour {
 
         GameAction winner = null;
         //System.err.println("turn start");
-        MCTSTree gameForest[] = new MCTSTree[numTrees];
 
-        double cumulativeWins[] = new double[validActions.size()];
-        double cumulativeTries[] = new double[validActions.size()];
-        for (int i = 0; i < gameForest.length; i++) {
-            GameContext temp = simulation.clone();
-            temp.getPlayer2().getDeck().shuffle();
-            temp.getPlayer1().getDeck().shuffle();
-            Player opponent;
-            if (player.getId() == 0) {
-                opponent = temp.getPlayer2();
-            } else {
-                opponent = temp.getPlayer1();
+        // double cumulativeWins[] = new double[validActions.size()];
+        //double cumulativeTries[] = new double[validActions.size()];
+        results = new double[numTrees][validActions.size()];
+        IntStream.range(0, numTrees)
+                .sequential()//.parallel()
+                .forEach((int i) -> getProbabilities(simulation.clone(), validActions, player.clone(), i));
+       //for(int i = 0; i<gameForest.length; i++){
+        //   getProbabilities(gameForest[i],simulation,validActions, player, i);
+        //}
+
+        double totalScore[] = new double[validActions.size()];
+        for (int a = 0; a < results.length; a++) {
+            for (int i = 0; i < results[a].length; i++) {
+                totalScore[i] += results[a][i];
             }
-
-            opponent.getDeck().addAll(opponent.getHand());
-            int handSize = opponent.getHand().getCount();
-            for (int k = 0; k < handSize; k++) {
-                Card card = opponent.getHand().get(0);
-                temp.getLogic().removeCard(opponent.getId(), card);
-            }
-
-            opponent.getDeck().shuffle();
-            for (int a = 0; a < handSize; a++) {
-                temp.getLogic().receiveCard(opponent.getId(), opponent.getDeck().removeFirst());
-            }
-
-            gameForest[i] = new MCTSTree(numRollouts / numTrees, validActions, temp, exploreFactor, deterministic);
-
-            gameForest[i].getBestAction();
-            MCTSTreeNode root = gameForest[i].root;
-            for (int a = 0; a < root.children.size(); a++) {
-                MCTSTreeNode child = root.children.get(a);
-                cumulativeWins[a] += child.totValue[context.getActivePlayerId()]/child.nVisits;
-                cumulativeTries[a] += 1;
-            }
-            //give the GC something to do.
-            root = null;
-            gameForest[i] = null;
-
         }
-
         double bestScore = Double.NEGATIVE_INFINITY;
         GameAction bestAction = validActions.get(0);
-        for (int i = 0; i < cumulativeWins.length; i++) {
-            double fitness = cumulativeWins[i] / cumulativeTries[i];
-            if (bestScore < fitness) {
-                bestScore = fitness;
-
+        for (int i = 0; i < totalScore.length; i++) {
+            if (totalScore[i] > bestScore) {
                 bestAction = validActions.get(i);
+                bestScore = totalScore[i];
             }
         }
-        System.err.println("ROBOT action was: " + bestAction ); 
+        
+        this.prevAction = bestAction.clone();
+        System.err.println("ROBOT action was: " + bestAction);
         winner = bestAction;
         return winner;
+    }
+
+    public void getProbabilities(GameContext simulation, List<GameAction> validActions, Player player, int index) {
+        MCTSTree gameTree;
+        System.err.println("index was " + index);
+        GameContext temp = simulation.clone();
+        temp.getPlayer2().getDeck().shuffle();
+        temp.getPlayer1().getDeck().shuffle();
+        simulation = simulation.clone();
+        Player opponent;
+        if (player.getId() == 0) {
+            opponent = temp.getPlayer2();
+        } else {
+            opponent = temp.getPlayer1();
+        }
+        opponent.getDeck().addAll(opponent.getHand());
+        int handSize = opponent.getHand().getCount();
+        for (int k = 0; k < handSize; k++) {
+            Card card = opponent.getHand().get(0);
+            temp.getLogic().removeCard(opponent.getId(), card);
+        }
+        opponent.getDeck().shuffle();
+        for (int a = 0; a < handSize; a++) {
+            temp.getLogic().receiveCard(opponent.getId(), opponent.getDeck().removeFirst());
+        }
+
+        gameTree = new MCTSTree(numRollouts / numTrees, validActions, temp, exploreFactor, deterministic);
+        if(prevContext != null && prevAction!=null){
+            System.err.println("this happens");
+          gameTree.root.parentContext = this.prevContext.clone();
+          gameTree.root.parentAction = this.prevAction.clone();
+          //gameTree.root.action = this.prevAction.clone();
+        }
+        gameTree.getBestAction();
+        MCTSTreeNode root = gameTree.root;
+        
+        for (int a = 0; a < root.children.size(); a++) {
+            MCTSTreeNode child = root.children.get(a);
+            System.err.println("a is " + a);
+            results[index][a] += child.totValue[player.getId()] / child.nVisits;
+        }
+        //give the GC something to do.
+        root = null;
+        gameTree = null;
+        return;
     }
 }
