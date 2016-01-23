@@ -1,5 +1,6 @@
-package net.demilich.metastone.game.behaviour.experimentalMCTS;
+package net.demilich.metastone.game.behavior.flatMCTS;
 
+import net.demilich.metastone.game.behaviour.experimentalMCTS.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -7,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 
 import net.demilich.metastone.game.GameContext;
-import net.demilich.metastone.game.Player;
 import net.demilich.metastone.game.actions.ActionType;
 import net.demilich.metastone.game.actions.GameAction;
 import net.demilich.metastone.game.behaviour.PlayAllRandomBehavior;
@@ -17,7 +17,6 @@ import net.demilich.metastone.game.behaviour.heuristic.WeightedHeuristic;
 import net.demilich.metastone.game.behaviour.threat.FeatureVector;
 import net.demilich.metastone.game.behaviour.threat.ThreatBasedHeuristic;
 import net.demilich.metastone.game.cards.Card;
-import net.demilich.metastone.game.cards.CardCollection;
 
 /*
  * 
@@ -28,9 +27,7 @@ import net.demilich.metastone.game.cards.CardCollection;
 public class MCTSTreeNode {
 
     static Random r = new Random();
-    
-    CardCollection preShuffledDeck;
-    
+
     static double epsilon = 1e-6;
 
     List<MCTSTreeNode> children = null;
@@ -44,20 +41,17 @@ public class MCTSTreeNode {
     int winningPlayer = -1;
     double exploreFactor = 1.0;
     GameAction action;
-    private boolean firstEndTurn = false;
 
-    public MCTSTreeNode(GameContext simulation, double exploreFactor, boolean firstEndTurn) {
+    public MCTSTreeNode(GameContext simulation, double exploreFactor) {
         this.context = simulation;
         this.exploreFactor = exploreFactor;
-        //this.rerollEvents = rerollEvents;
-        this.firstEndTurn = firstEndTurn;
+        childHash = new Hashtable<Integer, MCTSTreeNode>(30);
 
     }
 
     private MCTSTreeNode(MCTSTreeNode select) {
         this.context = select.context.clone();
         this.actions = select.actions;
-        this.firstEndTurn = select.firstEndTurn;
     }
 
     public void selectAction() {
@@ -66,15 +60,26 @@ public class MCTSTreeNode {
         MCTSTreeNode cur = this;
         visited.add(this);
         while (!cur.isLeaf()) {
-            cur = cur.select();
-            visited.add(cur);
+            MCTSTreeNode actionChosen = new MCTSTreeNode(cur.select());
+            //now apply the action
+            if (!cur.context.gameDecided()) {
+                actionChosen.applyAction();
+            }
+            //
+            int hash = hash(actionChosen);
+            if (!cur.childHash.contains(hash)) {
+                cur.childHash.put(hash, actionChosen);
+                cur = actionChosen;
+                System.err.println("here");
+            } else {
+                cur = childHash.get(hash);
+                System.err.println("thgere");
+            }
+            visited.add(actionChosen);
+
         }
 
         double value;
-
-        if (!cur.context.gameDecided()) {
-            cur.applyAction();
-        }
 
         if (!cur.context.gameDecided()) {
 
@@ -99,11 +104,16 @@ public class MCTSTreeNode {
         for (MCTSTreeNode node : visited) {
             node.updateStats(value);
         }
+
     }
     Hashtable<Integer, MCTSTreeNode> childHash = null;
 
     public int hash(MCTSTreeNode state) {
         return state.context.toString().hashCode();
+    }
+
+    public void selectAndPlayAction() {
+
     }
 
     public void applyAction() {
@@ -116,13 +126,6 @@ public class MCTSTreeNode {
         context.getLogic().performGameAction(context.getActivePlayerId(), action);
         if (action.getActionType() == ActionType.END_TURN) {
             context.startTurn(context.getActivePlayerId());
-
-            if (!firstEndTurn) {
-                this.firstEndTurn = true;
-                //todo: need some kind of pre-shuffled deck mechanism here
-                //otherwise we're assuming the opponent know everything about us. including our deck and hand
-            }
-
         }
         actions = context.getValidActions();
 
@@ -135,15 +138,14 @@ public class MCTSTreeNode {
         ArrayList<MCTSTreeNode> newNodes = new ArrayList<MCTSTreeNode>(actions.size());
 
         for (GameAction action : actions) {
-            MCTSTreeNode newNode = new MCTSTreeNode(context, exploreFactor, firstEndTurn);
+            MCTSTreeNode newNode = new MCTSTreeNode(context, exploreFactor);
             newNode.action = action;
             newNodes.add(newNode);
         }
+
         children = newNodes;
         this.activePlayer = context.getActivePlayerId();
-        if (!firstEndTurn) {
-            this.context = null;
-        }
+
     }
 
     private MCTSTreeNode select() {

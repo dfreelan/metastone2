@@ -163,12 +163,13 @@ public class PlayerConfigView extends VBox {
 
 		behaviourList.add(new GreedyOptimizeMove(new WeightedHeuristic()));
 		behaviourList.add(new NoAggressionBehaviour());
-                ExperimentalMCTS singleton = new ExperimentalMCTS(2500,1,1.25,false);
-                singleton.setName("2500 and 1 tree");
+                //10000 and 60 currently candidate best
+                ExperimentalMCTS singleton = new ExperimentalMCTS(10000,60,1.2,false);
+                singleton.setName("10000 and 60 trees, not clairvoyant");
 		behaviourList.add(singleton);
                 
-                ExperimentalMCTS quadTree = new ExperimentalMCTS(2500,4,1.25,false);
-                quadTree.setName("quad 2500");
+                ExperimentalMCTS quadTree = new ExperimentalMCTS(10000,30,1.2,false);
+                quadTree.setName("10000 and 30 trees");
 		behaviourList.add(quadTree);
                 
                 behaviourList.add(new PlayAllRandomBehavior());
