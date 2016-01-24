@@ -9,7 +9,9 @@ import net.demilich.metastone.game.actions.GameAction;
 import net.demilich.metastone.game.behaviour.PlayAllRandomBehavior;
 import net.demilich.metastone.game.behaviour.PlayAllRandomBiasedBehavior;
 import net.demilich.metastone.game.behaviour.PlayBestOfNBehavior;
+import net.demilich.metastone.game.behaviour.PlayHighestManaFirst;
 import net.demilich.metastone.game.behaviour.PlayRandomBehaviour;
+import net.demilich.metastone.game.behaviour.PlayRandomOverDepth;
 
 public class MCTSTree {
 
@@ -23,8 +25,8 @@ public class MCTSTree {
     public MCTSTree(int numIterations, List<GameAction> rootActions, GameContext context, double exploreFactor, boolean deterministic) {
         iterations = numIterations;
         this.simulation = context;
-        simulation.getPlayer1().setBehaviour(new PlayAllRandomBiasedBehavior());
-        simulation.getPlayer2().setBehaviour(new PlayAllRandomBiasedBehavior());
+        simulation.getPlayer1().setBehaviour(new PlayHighestManaFirst());
+        simulation.getPlayer2().setBehaviour(new PlayHighestManaFirst());
         root = new MCTSTreeNode(simulation, exploreFactor, deterministic);
         root.actions = rootActions;
     }

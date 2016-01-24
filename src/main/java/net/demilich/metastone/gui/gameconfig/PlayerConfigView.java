@@ -164,7 +164,7 @@ public class PlayerConfigView extends VBox {
 		behaviourList.add(new GreedyOptimizeMove(new WeightedHeuristic()));
 		behaviourList.add(new NoAggressionBehaviour());
                 //10000 and 60 currently candidate best
-                ExperimentalMCTS singleton = new ExperimentalMCTS(10000,60,1.2,false);
+                ExperimentalMCTS singleton = new ExperimentalMCTS(40000,90,1.2,false);
                 singleton.setName("10000 and 60 trees, not clairvoyant");
 		behaviourList.add(singleton);
                 
