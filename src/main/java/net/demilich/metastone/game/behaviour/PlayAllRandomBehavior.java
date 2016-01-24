@@ -39,9 +39,7 @@ public class PlayAllRandomBehavior extends Behaviour {
 
 		
 		
-		if(!validActions.contains(randomAction)){
-			throw new RuntimeException("Ref change random");
-		}
+		
 		return randomAction;
 	}
 
