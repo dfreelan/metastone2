@@ -391,9 +391,8 @@ public class GameContext implements Cloneable, IDisposable {
             total0Wins++;
         }
        // System.err.println("player zero has won " + total0Wins + " times");
-        System.out.println("player " + this.getWinningPlayerId() + " wins!");
+       // System.out.println("player " + this.getWinningPlayerId() + " wins!");
         endGame();
-
     }
 
     public void playFromMiddle() {
@@ -415,15 +414,16 @@ public class GameContext implements Cloneable, IDisposable {
         if (++actionsThisTurn > 99) {
             //logger.warn("Turn has been forcefully ended after {} actions", actionsThisTurn);
 			//System.err.println("ERROR\n\n\n" + this);
-                       /* try{
+               try{
                         
              throw new RuntimeException(" more than 100 actions? really? " );
                         
              }catch(RuntimeException e){
+                 System.err.println(this);
              System.err.println("ACTIONS AVAILABLE: " + getValidActions());
              e.printStackTrace();
              System.exit(0);
-             }*/
+             }
             endTurn();
             return false;
         }

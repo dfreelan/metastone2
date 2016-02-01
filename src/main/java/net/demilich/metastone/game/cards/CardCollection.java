@@ -145,5 +145,9 @@ public class CardCollection implements Iterable<Card>, Cloneable {
 	public List<Card> toList() {
 		return new ArrayList<>(cards);
 	}
+        
+        public List<Card> getList() {
+		return cards;
+	}
 
 }

@@ -12,7 +12,8 @@ public class CardReference {
 		this.location = location;
 		this.cardId = cardId;
 		this.cardName = cardName;
-	}
+	
+        }
 
 	@Override
 	public boolean equals(Object obj) {

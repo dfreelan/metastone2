@@ -92,9 +92,7 @@ public class ExperimentalMCTS extends Behaviour {
 
     @Override
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
-        if(validActions.get(0).getActionType() == ActionType.SPELL)
-            System.err.println(validActions.get(0));
-        System.err.println();
+        
         GameContext simulation = context.clone();
         for (int i = 0; i < validActions.size(); i++) {
             GameAction action = validActions.get(i);
@@ -116,7 +114,7 @@ public class ExperimentalMCTS extends Behaviour {
         results = new double[numTrees][validActions.size()];
         IntStream.range(0, numTrees)
                 .parallel()
-                .forEach((int i) -> getProbabilities(simulation.clone(), validActions, player, i));
+                .forEach((int i) -> getProbabilities(simulation.clone(), validActions, player.clone(), i));
        //for(int i = 0; i<gameForest.length; i++){
         //   getProbabilities(gameForest[i],simulation,validActions, player, i);
         //}
@@ -142,9 +140,10 @@ public class ExperimentalMCTS extends Behaviour {
                 secondBestAction = validActions.get(i);
                 secondBestScore = totalScore[i];
             }
-            //System.err.println("action " + validActions.get(i) + " fitness: " + totalScore[i]);
+            System.err.println("action " + validActions.get(i) + " fitness: " + totalScore[i]);
         }
-        if(bestScore-secondBestScore < .025){
+        
+        /*if(bestScore-secondBestScore < .025){
             GameContext bestContext = context.clone();
             bestContext.getLogic().performGameAction(player.getId(), bestAction);
             double bestH = heuristic.getScore(bestContext, player.getId());
@@ -160,7 +159,8 @@ public class ExperimentalMCTS extends Behaviour {
             }
         }else{
             winner = bestAction;
-        }
+        }*/
+        winner = bestAction;
             
         
         //System.err.println("ROBOT action was: " + bestAction + " turn is "  + context.getTurn());
@@ -170,6 +170,38 @@ public class ExperimentalMCTS extends Behaviour {
 
     public void getProbabilities(GameContext simulation, List<GameAction> validActions, Player player, int index) {
         MCTSTree gameTree;
+        
+        RandomizeSimulation(simulation,simulation.getPlayer(player.getId()));
+
+        gameTree = new MCTSTree(numRollouts / numTrees, validActions, simulation, exploreFactor, deterministic);
+        gameTree.getBestAction();
+        //f(index==0){
+        //   System.err.println("HEY THIS HAPPEND");
+        
+       
+        //}
+        MCTSTreeNode root = gameTree.root;
+        
+        
+        //accumulate results
+        for (int a = 0; a < root.children.size(); a++) {
+            MCTSTreeNode child = root.children.get(a);
+            results[index][a] += child.totValue[player.getId()] / child.nVisits;
+            if(child.totValue[player.getId()]  == 0){
+                System.err.println("it was 0, but i visisted it " + child.nVisits + " times");
+                System.err.println("enemy wins " + child.totValue[player.getId()] + " times");
+                System.err.println(child.action + " times");
+            }
+        }
+       // if(results[index][0]>results[index][1]){
+       //      gameTree.saveTreeToDot("/home/dfreelan/gametree" + index + ".txt");
+        //}
+        //give the GC something to do.
+        root = null;
+        gameTree = null;
+        return;
+    }
+    public void RandomizeSimulation(GameContext simulation, Player player){
         simulation.getPlayer2().getDeck().shuffle();
         simulation.getPlayer1().getDeck().shuffle();
         Player opponent;
@@ -188,19 +220,5 @@ public class ExperimentalMCTS extends Behaviour {
         for (int a = 0; a < handSize; a++) {
             simulation.getLogic().receiveCard(opponent.getId(), opponent.getDeck().removeFirst());
         }
-
-        gameTree = new MCTSTree(numRollouts / numTrees, validActions, simulation, exploreFactor, deterministic);
-
-        gameTree.getBestAction();
-        MCTSTreeNode root = gameTree.root;
-        
-        for (int a = 0; a < root.children.size(); a++) {
-            MCTSTreeNode child = root.children.get(a);
-            results[index][a] += child.totValue[player.getId()] / child.nVisits;
-        }
-        //give the GC something to do.
-        root = null;
-        gameTree = null;
-        return;
     }
 }

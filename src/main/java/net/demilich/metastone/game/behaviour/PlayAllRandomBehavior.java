@@ -34,7 +34,7 @@ public class PlayAllRandomBehavior extends Behaviour {
 		//validActions = context.getValidActions();
 		int randomIndex = random.nextInt(validActions.size()-1);
 		//we're not going to end turn unless we have to, so if it is, remove end turn from the list and select again
-		
+		//System.err.println("why yes, you are calling this behavior");
 		GameAction randomAction = validActions.get(randomIndex);
 
 		

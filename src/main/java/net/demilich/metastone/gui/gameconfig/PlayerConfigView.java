@@ -21,6 +21,7 @@ import net.demilich.metastone.game.behaviour.IBehaviour;
 import net.demilich.metastone.game.behaviour.NoAggressionBehaviour;
 import net.demilich.metastone.game.behaviour.PlayRandomBehaviour;
 import net.demilich.metastone.game.behaviour.PlayAllRandomBehavior;
+import net.demilich.metastone.game.behaviour.decicionTreeBheavior.DecisionTreeBehaviour;
 import net.demilich.metastone.game.behaviour.experimentalMCTS.ExperimentalMCTS;
 import net.demilich.metastone.game.behaviour.heuristic.WeightedHeuristic;
 import net.demilich.metastone.game.behaviour.human.HumanBehaviour;
@@ -164,13 +165,31 @@ public class PlayerConfigView extends VBox {
 		behaviourList.add(new GreedyOptimizeMove(new WeightedHeuristic()));
 		behaviourList.add(new NoAggressionBehaviour());
                 //10000 and 60 currently candidate best
-                ExperimentalMCTS singleton = new ExperimentalMCTS(40000,90,1.2,false);
+                //best of 2, 1.2 explore , 10000 rollouts, 60 trees, 5 features, both probmax
+                //41:9
+                //34:16
+                //RESET TREE: 
+                //35:15
+                //41:9
+                //Default play all rando,otherwise same settings as above... notice lack of variance
+                //36:14
+                //37:13
+                //36:14
+                //True best of two, not throwing out <.5
+                //32:18
+                //10000 and 30:
+                //39:11 (took 40 minutes!)
+                //36:14 took 43 minutes!
+                ExperimentalMCTS singleton = new ExperimentalMCTS(2500,10,1.2,false);
                 singleton.setName("10000 and 60 trees, not clairvoyant");
 		behaviourList.add(singleton);
+                
                 
                 ExperimentalMCTS quadTree = new ExperimentalMCTS(10000,30,1.2,false);
                 quadTree.setName("10000 and 30 trees");
 		behaviourList.add(quadTree);
+                
+                behaviourList.add(new DecisionTreeBehaviour());
                 
                 behaviourList.add(new PlayAllRandomBehavior());
 		behaviourBox.setItems(behaviourList);
@@ -198,5 +217,5 @@ public class PlayerConfigView extends VBox {
 			hideCardsCheckBox.setVisible(false);
 		}
 	}
-
 }
+
