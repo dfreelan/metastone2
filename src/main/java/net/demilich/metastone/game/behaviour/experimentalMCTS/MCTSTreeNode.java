@@ -109,8 +109,8 @@ public class MCTSTreeNode {
 
     public double getCost(GameAction action) {
         
-      //  if(action!=null  && isCard(action))
-      //      return .1/(context.getTurn()/2+1);
+        if(action!=null  && isCard(action))
+            return .1/(context.getTurn()/2+1);
         
         return 0.0;
     }

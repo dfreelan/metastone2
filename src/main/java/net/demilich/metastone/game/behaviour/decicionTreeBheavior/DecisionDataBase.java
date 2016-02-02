@@ -588,12 +588,12 @@ class FeatureStats implements Comparable<FeatureStats> {
     public FeatureStats(int feature, double pValue, double percentGood, int value, double frequency, String featureName, double defaultScore) {
         this.feature = feature;
         this.defaultScore = defaultScore;
-        this.pValue = pValue;
+        //this.pValue = pValue;
         if (Double.isNaN(pValue)) {
             this.pValue = 0;
-        }// else {
-        //   this.pValue = Math.max(1 - pValue, pValue);
-        // }
+        } else {
+           this.pValue = Math.max(1 - pValue, pValue);
+        }
         this.percentGood = percentGood;
         if (Double.isNaN(percentGood)) {
             this.percentGood = 0;
@@ -661,9 +661,9 @@ class MaxBiasedProbability {
         Collections.sort(stats);
         for (int i = 0; i < usedFeatures.length; i++) {
             usedFeatures[i] = stats.get(i).feature;
-           // if(stats.get(i).pValue < MaxBiasedProbability.threshold){
-            //  stats.get(i).percentGood = this.percentGood; 
-            //}
+            if(stats.get(i).pValue < MaxBiasedProbability.threshold){
+              stats.get(i).percentGood = this.percentGood; 
+            }
         }
     }
 
@@ -671,7 +671,7 @@ class MaxBiasedProbability {
         double numGoodTrue = (double) featureTrue.stream().filter(e -> e.classification == 2).count();
 
         double pValue = getZScore(numSamples, totalGood, featureTrue.size(), numGoodTrue);
-        //pValue = norm.cumulativeProbability(pValue);
+        pValue = norm.cumulativeProbability(pValue);
         //if(pValue<.5){
         //    pValue = 1.0-pValue;
         // }
@@ -684,13 +684,13 @@ class MaxBiasedProbability {
     }
 
     public synchronized double getZScore(double dist1Samples, double dist1Positives, double dist2Samples, double dist2Positives) {
-        /*double p1 = dist1Positives / dist1Samples;
+        double p1 = dist1Positives / dist1Samples;
          double p2 = dist2Positives / dist2Samples;
          double pHat = (dist1Samples * p1 + dist2Samples * p2) / (dist1Samples + dist2Samples);
-         return (p1 - p2) / Math.sqrt(pHat * (1 - pHat) * (1 / dist1Samples + 1 / dist2Samples));*/
-        BinomialTest dist = new BinomialTest();
-        System.err.println(dist2Samples + " " + dist2Positives + " is returning:" + dist.binomialTest((int) dist2Samples, (int) dist2Positives, .5, AlternativeHypothesis.TWO_SIDED));
-        return 1 - dist.binomialTest((int) dist2Samples, (int) dist2Positives, .5, AlternativeHypothesis.TWO_SIDED);
+         return (p1 - p2) / Math.sqrt(pHat * (1 - pHat) * (1 / dist1Samples + 1 / dist2Samples));
+        //BinomialTest dist = new BinomialTest();
+        //System.err.println(dist2Samples + " " + dist2Positives + " is returning:" + dist.binomialTest((int) dist2Samples, (int) dist2Positives, .5, AlternativeHypothesis.TWO_SIDED));
+        //return 1 - dist.binomialTest((int) dist2Samples, (int) dist2Positives, .5, AlternativeHypothesis.TWO_SIDED);
     }
 //for each feature f
     //for each value a feature can have i = (>.5, <.5)
