@@ -22,7 +22,26 @@ import sim.app.horde.classifiers.Domain;
 import sim.app.horde.classifiers.Example;
 import sim.app.horde.classifiers.decisiontree.DecisionTree;
 
-public class DecisionTreeBehaviour extends Behaviour {
+public class DecisionTreeBehaviour extends Behaviour{
+
+    @Override
+    public String getName() {
+       return "DecisionTReeBehaviour";
+               }
+
+    @Override
+    public List<Card> mulligan(GameContext context, Player player, List<Card> cards) {
+        return new ArrayList<>();
+    }
+
+    @Override
+    public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
+        DecisionTreeBehaviourWrapper decTree = new DecisionTreeBehaviourWrapper();
+        return decTree.requestAction(context.clone(), player.clone(), validActions);
+    }
+
+}
+ class DecisionTreeBehaviourWrapper{
 
     private Random random = new Random();
     TIntIntHashMap hashToIndex;
@@ -31,60 +50,16 @@ public class DecisionTreeBehaviour extends Behaviour {
     DecisionDataBase knowledge = null;
     static boolean staticInited = false;
     static int bestOf = 1;
-    public DecisionTreeBehaviour() {
+    public DecisionTreeBehaviourWrapper() {
 
     }
 
     // MersenneTwisterFast rand = new MersenneTwisterFast();
-    @Override
-    public String getName() {
-        return "DecisionTreeBehavior";
-    }
+   
 
-    @Override
-    public void onGameOver(GameContext context, int playerId, int winningPlayerId) {
+    
 
-        //System.err.println("happens");
-    }
-
-    @Override
-    public List<Card> mulligan(GameContext context, Player player, List<Card> cards) {
-
-        return new ArrayList<>();
-    }
-
-    public static synchronized void initKnowledge(GameContext context, Player player) {
-        if (staticInited) {
-            return;
-        }
-        staticKnowledge = new DecisionDataBase(context, player);
-        GameContext simulation = context.clone();
-
-        Player me = simulation.getPlayer(player.getId());
-        Player opp = simulation.getOpponent(me);
-
-        me.setBehaviour(new KnowledgeCollectionBehavior(staticKnowledge));
-        opp.setBehaviour(new PlayRandomBehaviour());
-
-        IntStream.range(0, 10000).parallel().forEach((int i) -> rollout(simulation, 1, simulation.getPlayer(player.getId())));
-
-        staticKnowledge.learn();
-        System.err.println("brawl knowledge:");
-        if (staticKnowledge.getCardKnowledge("Brawl") != null) {
-            //System.err.println(staticKnowledge.getCardKnowledge("Brawl").tree.getRoot().nodeToDot());
-            staticKnowledge.getCardKnowledge("Brawl").probMax.printInfo();
-        }
-
-        System.err.println("whirwind knowledge:");
-        if (staticKnowledge.getCardKnowledge("Whirlwind") != null) {
-            //System.err.println(staticKnowledge.getCardKnowledge("Whirlwind").tree.getRoot().nodeToDot());
-            staticKnowledge.getCardKnowledge("Whirlwind").probMax.printInfo();
-        }
-
-        staticInited = true;
-    }
-
-    @Override
+  
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
         //System.err.println("random player behavior");
        
@@ -168,5 +143,34 @@ public class DecisionTreeBehaviour extends Behaviour {
             simulation.getLogic().receiveCard(player.getId(), player.getDeck().removeFirst());
         }
     }
+    public static synchronized void initKnowledge(GameContext context, Player player) {
+        if (staticInited) {
+            return;
+        }
+        staticKnowledge = new DecisionDataBase(context, player);
+        GameContext simulation = context.clone();
 
-}
+        Player me = simulation.getPlayer(player.getId());
+        Player opp = simulation.getOpponent(me);
+
+        me.setBehaviour(new KnowledgeCollectionBehavior(staticKnowledge));
+        opp.setBehaviour(new PlayRandomBehaviour());
+
+        IntStream.range(0, 10000).parallel().forEach((int i) -> rollout(simulation, 1, simulation.getPlayer(player.getId())));
+
+        staticKnowledge.learn();
+        System.err.println("brawl knowledge:");
+        if (staticKnowledge.getCardKnowledge("Brawl") != null) {
+            //System.err.println(staticKnowledge.getCardKnowledge("Brawl").tree.getRoot().nodeToDot());
+            staticKnowledge.getCardKnowledge("Brawl").probMax.printInfo();
+        }
+
+        System.err.println("whirwind knowledge:");
+        if (staticKnowledge.getCardKnowledge("Whirlwind") != null) {
+            //System.err.println(staticKnowledge.getCardKnowledge("Whirlwind").tree.getRoot().nodeToDot());
+            staticKnowledge.getCardKnowledge("Whirlwind").probMax.printInfo();
+        }
+
+        staticInited = true;
+    }
+ }

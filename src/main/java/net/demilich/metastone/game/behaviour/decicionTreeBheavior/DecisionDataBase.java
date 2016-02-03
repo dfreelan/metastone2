@@ -206,9 +206,11 @@ final class DecisionDataBase implements Cloneable {
             System.err.println("table: " + featureAndHash[0][i] + " " + featureAndHash[1][i] + " " + featureNames[i]);
         }
     }
-    public void reUseData(){
+
+    public void reUseData() {
         modified = false;
     }
+
     public void learn() {
         for (CardContextKnowledge k : database) {
             k.learn(featureAndHash[1]);
@@ -312,7 +314,7 @@ final class DecisionDataBase implements Cloneable {
     }
 
     public int getFeatureIndex(String name, boolean enemy, boolean board) {
-        
+
         String featureName;
         if (enemy) {
             if (board) {
@@ -321,14 +323,14 @@ final class DecisionDataBase implements Cloneable {
                 featureName = "EH:";
             }
         } else {
-           if (board) {
+            if (board) {
                 featureName = "MB:";
             } else {
                 featureName = "MH:";
             }
         }
-        featureName+=name;
-        
+        featureName += name;
+
         return this.featureHashToIndex.get(featureName.hashCode());
     }
 
@@ -353,17 +355,17 @@ final class DecisionDataBase implements Cloneable {
             return 0;
         }
         CardContextKnowledge knowledge = database[index];
-        if(prevTurn==context.getTurn()){
+        if (prevTurn == context.getTurn()) {
             modified = false;
-        }else{
+        } else {
             prevTurn = context.getTurn();
-           
+
         }
-         furfillOrder(context, knowledge, player);
+        furfillOrder(context, knowledge, player);
         //Example query = new Example(featureData);
 
         return knowledge.classify(featureData);
-       // return knowledge.probMax.percentGood;
+        // return knowledge.probMax.percentGood;
     }
 
     public void printEntireBoardState(GameContext context, Player player) {
@@ -400,21 +402,24 @@ final class DecisionDataBase implements Cloneable {
         modified = true;
         populateBoardMinions((ArrayList<Minion>) player.getMinions(), false);
         populateBoardMinions((ArrayList<Minion>) context.getOpponent(player).getMinions(), true);
-        populateHandCards( (ArrayList<Card>) player.getHand().getList(), false);
-        populateHandCards( (ArrayList<Card>) context.getOpponent(player).getHand().getList(), true);
+        populateHandCards((ArrayList<Card>) player.getHand().getList(), false);
+        populateHandCards((ArrayList<Card>) context.getOpponent(player).getHand().getList(), true);
     }
-    private void populateBoardMinions(ArrayList<Minion> minions, boolean enemy){
-        for(Minion minion : minions){
+
+    private void populateBoardMinions(ArrayList<Minion> minions, boolean enemy) {
+        for (Minion minion : minions) {
             int index = this.getFeatureIndex(minion.getName(), enemy, true);
             this.featureData[index] = 1;
         }
     }
-    private void populateHandCards(ArrayList<Card> cards, boolean enemy){
-        for(Card card : cards){
+
+    private void populateHandCards(ArrayList<Card> cards, boolean enemy) {
+        for (Card card : cards) {
             int index = this.getFeatureIndex(card.getName(), enemy, false);
             this.featureData[index] = 1;
         }
     }
+
     private void furfillOrder(GameContext context, CardContextKnowledge knowledge, Player player) {
         if (knowledge.requiredFeatures == null) {
             System.err.println("REQUIRED FEATURES WAS NULL");
@@ -422,9 +427,9 @@ final class DecisionDataBase implements Cloneable {
 
         }
        // if (knowledge.requiredFeatures.length > 5) {
-         //   furfillAll(context, player);
+        //   furfillAll(context, player);
         //}else{
-            furfillOrder(context, knowledge.requiredFeatures, knowledge.featureHashes, player);
+        furfillOrder(context, knowledge.requiredFeatures, knowledge.featureHashes, player);
         //}
 
     }
@@ -592,7 +597,7 @@ class FeatureStats implements Comparable<FeatureStats> {
         if (Double.isNaN(pValue)) {
             this.pValue = 0;
         } else {
-           this.pValue = Math.max(1 - pValue, pValue);
+            this.pValue = Math.max(1 - pValue, pValue);
         }
         this.percentGood = percentGood;
         if (Double.isNaN(percentGood)) {
@@ -661,8 +666,8 @@ class MaxBiasedProbability {
         Collections.sort(stats);
         for (int i = 0; i < usedFeatures.length; i++) {
             usedFeatures[i] = stats.get(i).feature;
-            if(stats.get(i).pValue < MaxBiasedProbability.threshold){
-              stats.get(i).percentGood = this.percentGood; 
+            if (stats.get(i).pValue < MaxBiasedProbability.threshold) {
+                stats.get(i).percentGood = this.percentGood;
             }
         }
     }
@@ -685,9 +690,9 @@ class MaxBiasedProbability {
 
     public synchronized double getZScore(double dist1Samples, double dist1Positives, double dist2Samples, double dist2Positives) {
         double p1 = dist1Positives / dist1Samples;
-         double p2 = dist2Positives / dist2Samples;
-         double pHat = (dist1Samples * p1 + dist2Samples * p2) / (dist1Samples + dist2Samples);
-         return (p1 - p2) / Math.sqrt(pHat * (1 - pHat) * (1 / dist1Samples + 1 / dist2Samples));
+        double p2 = dist2Positives / dist2Samples;
+        double pHat = (dist1Samples * p1 + dist2Samples * p2) / (dist1Samples + dist2Samples);
+        return (p1 - p2) / Math.sqrt(pHat * (1 - pHat) * (1 / dist1Samples + 1 / dist2Samples));
         //BinomialTest dist = new BinomialTest();
         //System.err.println(dist2Samples + " " + dist2Positives + " is returning:" + dist.binomialTest((int) dist2Samples, (int) dist2Positives, .5, AlternativeHypothesis.TWO_SIDED));
         //return 1 - dist.binomialTest((int) dist2Samples, (int) dist2Positives, .5, AlternativeHypothesis.TWO_SIDED);
@@ -728,13 +733,12 @@ class MaxBiasedProbability {
                 data[stats.feature] = 1;
             }
             if (data[stats.feature] == stats.value) {
-              //  System.err.println("we matched the feature " + stats.featureName + "=" + stats.value);
+                //  System.err.println("we matched the feature " + stats.featureName + "=" + stats.value);
                 //  System.err.println("it is " + this.percentGood + " on its own");
                 //  System.err.println("but in this situation: " + stats.percentGood);
                 if (stats.percentGood < worstAttribute) {
                     worstAttribute = stats.percentGood;
                 }
-
             }
         }
         //System.err.println("we didn't find a matching feature");
@@ -782,7 +786,6 @@ class CardContextKnowledge {
     }
 
     public double doMaxProbClassify(double[] data) {
-
         return probMax.getDecision(data);
     }
 

@@ -115,6 +115,11 @@ public class GameLogic implements Cloneable {
 	private final int MAX_HISTORY_ENTRIES = 100;
 	private Queue<String> debugHistory = new LinkedList<>();
 
+        
+        public boolean simulationActive = false;
+        public ArrayList<GameAction> battlecries = null;
+           
+        
 	public GameLogic() {
 		idFactory = new IdFactory();
 	}
@@ -1357,7 +1362,10 @@ public class GameLogic implements Cloneable {
 				targetedBattlecry.setTarget(validTarget);
 				battlecryActions.add(targetedBattlecry);
 			}
-
+                        if(simulationActive){
+                            this.battlecries = (ArrayList<GameAction>)battlecryActions;
+                            return;
+                        }
 			battlecryAction = player.getBehaviour().requestAction(context, player, battlecryActions);
 		} else {
 			battlecryAction = battlecry;

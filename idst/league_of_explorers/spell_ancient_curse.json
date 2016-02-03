@@ -1,0 +1,36 @@
+{
+	"id": "spell_ancient_curse",
+	"name": "Ancient Curse",
+	"baseManaCost": 0,
+	"type": "SPELL",
+	"heroClass": "ANY",
+	"rarity": "COMMON",
+	"description": "When you draw this, take 7 damage and draw a card.",
+	"targetSelection": "NONE",
+	"spell": {
+		"class": "NullSpell"
+	},
+	"passiveTrigger": {
+		"eventTrigger": {
+			"class": "ThisCardDrawnTrigger"
+		},
+		"spell": {
+			"class": "MetaSpell",
+			"spell1": {
+				"class": "DamageSpell",
+				"target": "FRIENDLY_HERO",
+				"value": 7
+			},
+			"spell2": {
+				"class": "RemoveCardSpell",
+				"target": "EVENT_TARGET"
+			},
+			"spell3": {
+				"class": "DrawCardSpell"
+			}
+		}
+	},
+	"collectible": false,
+	"set": "LEAGUE_OF_EXPLORERS",
+	"fileFormatVersion": 1
+}

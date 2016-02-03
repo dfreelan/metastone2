@@ -1,0 +1,33 @@
+{
+	"id": "minion_void_crusher",
+	"name": "Void Crusher",
+	"baseManaCost": 6,
+	"type": "MINION",
+	"baseAttack": 5,
+	"baseHp": 4,
+	"heroClass": "WARLOCK",
+	"rarity": "RARE",
+	"description": "Inspire: Destroy a random minion for each player.",
+	"trigger": {
+		"eventTrigger": {
+			"class": "InspireTrigger"
+		},
+		"spell": {
+			"class": "MetaSpell",
+			"spell1": {
+				"class": "DestroySpell",
+				"target": "FRIENDLY_MINIONS",
+				"randomTarget": true
+			},
+			"spell2": {
+				"class": "DestroySpell",
+				"target": "ENEMY_MINIONS",
+				"randomTarget": true
+			}
+		}
+	},
+	"race": "DEMON",
+	"collectible": true,
+	"set": "THE_GRAND_TOURNAMENT",
+	"fileFormatVersion": 1
+}

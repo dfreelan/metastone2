@@ -1,0 +1,30 @@
+{
+	"id": "minion_hungry_dragon",
+	"name": "Hungry Dragon",
+	"baseManaCost": 4,
+	"type": "MINION",
+	"baseAttack": 5,
+	"baseHp": 6,
+	"heroClass": "ANY",
+	"rarity": "COMMON",
+	"description": "Battlecry: Summon a random 1-Cost minion for your opponent.",
+	"battlecry": {
+		"spell": {
+			"class": "SummonRandomMinionFilteredSpell",
+			"targetPlayer": "OPPONENT",
+			"cardFilter": {
+				"class": "CardFilter",
+				"cardType": "MINION",
+				"manaCost": 1
+			}
+		},
+		"resolvedLate": false
+	},
+	"race": "DRAGON",
+	"attributes": {
+		"BATTLECRY": true
+	},
+	"collectible": true,
+	"set": "BLACKROCK_MOUNTAIN",
+	"fileFormatVersion": 1
+}

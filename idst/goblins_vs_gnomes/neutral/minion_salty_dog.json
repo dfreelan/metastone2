@@ -1,0 +1,15 @@
+{
+	"id": "minion_salty_dog",
+	"name": "Salty Dog",
+	"baseManaCost": 5,
+	"type": "MINION",
+	"baseAttack": 7,
+	"baseHp": 4,
+	"heroClass": "ANY",
+	"rarity": "COMMON",
+	"description": "",
+	"race": "PIRATE",
+	"collectible": true,
+	"set": "GOBLINS_VS_GNOMES",
+	"fileFormatVersion": 1
+}

@@ -21,8 +21,7 @@ public class MCTSTree {
     public MCTSTreeNode root;
     private GameContext simulation = null;
 
-    public MCTSTree() {
-    }
+    public MCTSTree() {}
 
     public MCTSTree(int numIterations, List<GameAction> rootActions, GameContext context, double exploreFactor, boolean deterministic) {
         iterations = numIterations;

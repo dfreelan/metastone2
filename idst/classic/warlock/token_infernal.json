@@ -1,0 +1,15 @@
+{
+	"id": "token_infernal",
+	"name": "Infernal",
+	"baseManaCost": 6,
+	"type": "MINION",
+	"baseAttack": 6,
+	"baseHp": 6,
+	"heroClass": "ANY",
+	"rarity": "COMMON",
+	"description": "",
+	"race": "DEMON",
+	"collectible": false,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

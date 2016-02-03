@@ -1,0 +1,19 @@
+{
+	"id": "minion_arcane_nullifier_x-21",
+	"name": "Arcane Nullifier X-21",
+	"baseManaCost": 4,
+	"type": "MINION",
+	"baseAttack": 2,
+	"baseHp": 5,
+	"heroClass": "ANY",
+	"rarity": "RARE",
+	"description": "Taunt. Can't be targeted by spells or Hero Powers.",
+	"race": "MECH",
+	"attributes": {
+		"TAUNT": true,
+		"UNTARGETABLE_BY_SPELLS": true
+	},
+	"collectible": true,
+	"set": "GOBLINS_VS_GNOMES",
+	"fileFormatVersion": 1
+}

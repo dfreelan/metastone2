@@ -1,0 +1,15 @@
+{
+	"id": "token_worthless_imp",
+	"name": "Worthless Imp",
+	"baseManaCost": 1,
+	"type": "MINION",
+	"baseAttack": 1,
+	"baseHp": 1,
+	"heroClass": "ANY",
+	"rarity": "COMMON",
+	"description": "You are out of demons! At least there are always imps...",
+	"race": "DEMON",
+	"collectible": false,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

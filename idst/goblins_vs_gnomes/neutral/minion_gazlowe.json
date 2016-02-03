@@ -1,0 +1,30 @@
+{
+	"id": "minion_gazlowe",
+	"name": "Gazlowe",
+	"baseManaCost": 6,
+	"type": "MINION",
+	"baseAttack": 3,
+	"baseHp": 6,
+	"heroClass": "ANY",
+	"rarity": "LEGENDARY",
+	"description": "Whenever you cast a 1-mana spell, add a random Mech to your hand.",
+	"trigger": {
+		"eventTrigger": {
+			"class": "SpellCastedTrigger",
+			"condition": {
+				"class": "ManaCostCondition",
+				"value": 1
+			}
+		},
+		"spell": {
+			"class": "ReceiveRandomCollectibleCardSpell",
+			"cardFilter": {
+				"class": "RaceFilter",
+				"race": "MECH"
+			}
+		}
+	},
+	"collectible": true,
+	"set": "GOBLINS_VS_GNOMES",
+	"fileFormatVersion": 1
+}

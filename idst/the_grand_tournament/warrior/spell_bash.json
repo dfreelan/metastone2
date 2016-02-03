@@ -1,0 +1,25 @@
+{
+	"id": "spell_bash",
+	"name": "Bash",
+	"baseManaCost": 3,
+	"type": "SPELL",
+	"heroClass": "WARRIOR",
+	"rarity": "COMMON",
+	"description": "Deal 3 damage. Gain 3 Armor.",
+	"targetSelection": "ANY",
+	"spell": {
+		"class": "MetaSpell",
+		"spell1": {
+			"class": "DamageSpell",
+			"value": 3
+		},
+		"spell2": {
+			"class": "BuffHeroSpell",
+			"target": "FRIENDLY_HERO",
+			"armorBonus": 3
+		}
+	},
+	"collectible": true,
+	"set": "THE_GRAND_TOURNAMENT",
+	"fileFormatVersion": 1
+}

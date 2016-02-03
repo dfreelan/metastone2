@@ -1,0 +1,31 @@
+{
+	"id": "spell_fist_of_jaraxxus",
+	"name": "Fist of Jaraxxus",
+	"baseManaCost": 4,
+	"type": "SPELL",
+	"heroClass": "WARLOCK",
+	"rarity": "RARE",
+	"description": "When you play or discard this, deal 4 damage to a random enemy.",
+	"targetSelection": "NONE",
+	"spell": {
+		"class": "DamageSpell",
+		"target": "ENEMY_CHARACTERS",
+		"value": 4,
+		"randomTarget": "true"
+	},
+	"passiveTrigger": {
+		"eventTrigger": {
+			"class": "DiscardTrigger",
+			"target": "SELF"
+		},
+		"spell": {
+			"class": "DamageSpell",
+			"target": "ENEMY_CHARACTERS",
+			"value": 4,
+			"randomTarget": "true"
+		}
+	},
+	"collectible": true,
+	"set": "THE_GRAND_TOURNAMENT",
+	"fileFormatVersion": 1
+}

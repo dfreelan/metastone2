@@ -12,6 +12,7 @@ import net.demilich.metastone.game.GameContext;
 import net.demilich.metastone.game.Player;
 import net.demilich.metastone.game.actions.ActionType;
 import net.demilich.metastone.game.actions.GameAction;
+import net.demilich.metastone.game.behaviour.experimentalMCTS.ExperimentalMCTS;
 import net.demilich.metastone.game.cards.Card;
 import net.demilich.metastone.game.entities.Actor;
 import net.demilich.metastone.game.entities.Entity;
@@ -110,6 +111,9 @@ public class TargetLogic {
 		logger.error("Id " + targetId + " not found!");
 		logger.error(context.toString());
 		logger.error(context.getEnvironment().toString());
+                if(targetKey.getId()<0){
+                    System.err.println("id was less than zero \n" + ExperimentalMCTS.lastPlayedAction);
+                }
 		throw new RuntimeException("Target not found exception: " + targetKey + " " + context);
 	}
 

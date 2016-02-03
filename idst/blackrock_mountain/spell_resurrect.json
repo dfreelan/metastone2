@@ -1,0 +1,16 @@
+{
+	"id": "spell_resurrect",
+	"name": "Resurrect",
+	"baseManaCost": 2,
+	"type": "SPELL",
+	"heroClass": "PRIEST",
+	"rarity": "RARE",
+	"description": "Summon a random friendly minion that died this game.",
+	"targetSelection": "NONE",
+	"spell": {
+		"class": "ResurrectSpell"
+	},
+	"collectible": true,
+	"set": "BLACKROCK_MOUNTAIN",
+	"fileFormatVersion": 1
+}

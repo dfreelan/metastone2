@@ -1,0 +1,33 @@
+{
+	"id": "minion_fel_cannon",
+	"name": "Fel Cannon",
+	"baseManaCost": 4,
+	"type": "MINION",
+	"baseAttack": 3,
+	"baseHp": 5,
+	"heroClass": "WARLOCK",
+	"rarity": "RARE",
+	"description": "At the end of your turn, deal 2 damage to a non-Mech minion.",
+	"trigger": {
+		"eventTrigger": {
+			"class": "TurnEndTrigger",
+			"targetPlayer": "SELF",
+			"breaksStealth": true
+		},
+		"spell": {
+			"class": "DamageSpell",
+			"target": "ALL_MINIONS",
+			"value": 2,
+			"randomTarget": true,
+			"filter": {
+				"class": "RaceFilter",
+				"race": "MECH",
+				"invert": true
+			}
+		}
+	},
+	"race": "MECH",
+	"collectible": true,
+	"set": "GOBLINS_VS_GNOMES",
+	"fileFormatVersion": 1
+}

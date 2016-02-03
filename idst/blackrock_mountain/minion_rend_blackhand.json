@@ -1,0 +1,33 @@
+{
+	"id": "minion_rend_blackhand",
+	"name": "Rend Blackhand",
+	"baseManaCost": 7,
+	"type": "MINION",
+	"baseAttack": 8,
+	"baseHp": 4,
+	"heroClass": "ANY",
+	"rarity": "LEGENDARY",
+	"description": "Battlecry: If you're holding a Dragon, destroy a Legendary minion.",
+	"battlecry": {
+		"targetSelection": "MINIONS",
+		"spell": {
+			"class": "DestroySpell",
+			"filter": {
+				"rarity": "LEGENDARY",
+				"class": "CardFilter"
+			}
+		},
+		"condition": {
+			"class": "HoldsCardCondition",
+			"race": "DRAGON"
+		},
+		"resolvedLate": false
+	},
+	"race": "DRAGON",
+	"attributes": {
+		"BATTLECRY": true
+	},
+	"collectible": true,
+	"set": "BLACKROCK_MOUNTAIN",
+	"fileFormatVersion": 1
+}

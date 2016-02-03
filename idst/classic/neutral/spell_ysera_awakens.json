@@ -1,0 +1,26 @@
+{
+	"id": "spell_ysera_awakens",
+	"name": "Ysera Awakens",
+	"baseManaCost": 2,
+	"type": "SPELL",
+	"heroClass": "ANY",
+	"rarity": "FREE",
+	"description": "Deal 5 damage to all characters except Ysera.",
+	"targetSelection": "NONE",
+	"spell": {
+		"class": "DamageSpell",
+		"target": "ALL_CHARACTERS",
+		"valueProvider": {
+			"class": "ConditionalValueProvider",
+			"ifTrue": 0,
+			"ifFalse": 5,
+			"condition": {
+				"class": "CardPropertyCondition",
+				"cardId": "minion_ysera"
+			}
+		}
+	},
+	"collectible": false,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

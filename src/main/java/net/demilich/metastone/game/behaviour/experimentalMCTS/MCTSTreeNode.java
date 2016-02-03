@@ -76,9 +76,14 @@ public class MCTSTreeNode {
             cur.expand(cur.context.getActivePlayerId());
             MCTSTreeNode newNode = cur.select();
             visited.add(newNode);
-            value = rollOut(newNode);
-            if(value==-1){
-              //  System.err.println("uhh value was -1 after rollout: times" );
+            
+           // if(newNode.action.getActionType() == ActionType.BATTLECRY)
+                value = this.rollOutBattleCry(newNode, newNode.action);
+           // else
+                value = rollOut(newNode);
+
+            if (value == -1) {
+                //  System.err.println("uhh value was -1 after rollout: times" );
             }
         } else if (cur.context.getWinningPlayerId() == 0 || cur.context.getWinningPlayerId() == 1) {
             if (cur.context.getWinningPlayerId() == 0) {
@@ -88,9 +93,9 @@ public class MCTSTreeNode {
                 totValue[1] = Double.POSITIVE_INFINITY;
                 totValue[0] = Double.NEGATIVE_INFINITY;
             }
-           
+
             value = cur.context.getWinningPlayerId();
-            if(value == -1){
+            if (value == -1) {
                 System.err.println("hey.. uh value is weird times");
             }
         } else {
@@ -99,7 +104,6 @@ public class MCTSTreeNode {
             totValue[1] = Double.NEGATIVE_INFINITY;
             value = -1;
         }
-       
 
         for (MCTSTreeNode node : visited) {
 
@@ -108,10 +112,11 @@ public class MCTSTreeNode {
     }
 
     public double getCost(GameAction action) {
-        
-        if(action!=null  && isCard(action))
-            return .1/(context.getTurn()/2+1);
-        
+
+        if (action != null && isCard(action)) {
+            return .1 / (context.getTurn() / 2 + 1);
+        }
+
         return 0.0;
     }
 
@@ -131,18 +136,26 @@ public class MCTSTreeNode {
         }
 
         //this.context = this.context.clone();
+        context.getLogic().simulationActive = true;
         context.getLogic().performGameAction(context.getActivePlayerId(), action);
+        context.getLogic().simulationActive = false;
         if (action.getActionType() == ActionType.END_TURN) {
             context.startTurn(context.getActivePlayerId());
         }
-        actions = context.getValidActions();
+        if (context.getLogic().battlecries != null) {
+            actions = context.getLogic().battlecries;
+            context.getLogic().battlecries = null;
+        } else {
+
+            actions = context.getValidActions();
+        }
 
     }
 
     public void expand(int playerID) {
         assert (actions != null);
         assert (actions.size() > 0);
-        if(actions.size() == 0 ){
+        if (actions.size() == 0) {
             throw new RuntimeException("There were 0 actions supplied after applying action " + action + "in context " + this.context);
         }
         ArrayList<MCTSTreeNode> newNodes = new ArrayList<MCTSTreeNode>(actions.size());
@@ -164,7 +177,6 @@ public class MCTSTreeNode {
         children = newNodes;
         this.activePlayer = context.getActivePlayerId();
 
-       
     }
 
     private MCTSTreeNode select() {
@@ -201,6 +213,17 @@ public class MCTSTreeNode {
         return simulation.getWinningPlayerId();
     }
 
+    public double rollOutBattleCry(MCTSTreeNode tn, GameAction battlecry) {
+        //play a random game of hearthstone... but battlecry first
+
+        GameContext simulation = tn.context.clone();
+        simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);
+
+        simulation.playFromMiddle();
+
+        return simulation.getWinningPlayerId();
+    }
+
     public void updateStats(double value) {
         nVisits++;
         if (value != -1.0) {
@@ -224,7 +247,7 @@ public class MCTSTreeNode {
 
 //System.err.println("CHILD TOT VALLUE " + child.totValue[child.context.getActivePlayerId()] + " " + "best " + best);
             double fitness = child.totValue[activePlayer] / (1 + child.nVisits);
-           
+
             //System.err.println("action is " + actions.get(i) + ": " + fitness + " " + child.nVisits);
             if (fitness > best) {
                 bestAction = actions.get(i);
@@ -278,7 +301,7 @@ public class MCTSTreeNode {
         if (activePlayer == -1) {
             activePlayer = context.getActivePlayerId();
         }
-       // if(this.totValue[activePlayer]/this.nVisits > 1.0){
+        // if(this.totValue[activePlayer]/this.nVisits > 1.0){
         //    System.err.println("you done bad");
         //    System.exit(0);
         // }

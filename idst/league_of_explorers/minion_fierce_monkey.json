@@ -1,0 +1,18 @@
+{
+	"id": "minion_fierce_monkey",
+	"name": "Fierce Monkey",
+	"baseManaCost": 3,
+	"type": "MINION",
+	"baseAttack": 3,
+	"baseHp": 4,
+	"heroClass": "WARRIOR",
+	"rarity": "COMMON",
+	"description": "Taunt",
+	"race": "BEAST",
+	"attributes": {
+		"TAUNT": true
+	},
+	"collectible": true,
+	"set": "LEAGUE_OF_EXPLORERS",
+	"fileFormatVersion": 1
+}

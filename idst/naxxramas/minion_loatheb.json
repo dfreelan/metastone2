@@ -1,0 +1,30 @@
+{
+	"id": "minion_loatheb",
+	"name": "Loatheb",
+	"baseManaCost": 5,
+	"type": "MINION",
+	"baseAttack": 5,
+	"baseHp": 5,
+	"heroClass": "ANY",
+	"rarity": "LEGENDARY",
+	"description": "Battlecry: Enemy spells cost (5) more next turn.",
+	"battlecry": {
+		"spell": {
+			"class": "CardCostModifierSpell",
+			"target": "FRIENDLY_HERO",
+			"cardCostModifier": {
+				"class": "OneTurnCostModifier",
+				"cardType": "SPELL",
+				"targetPlayer": "OPPONENT",
+				"value": 5
+			}
+		},
+		"resolvedLate": false
+	},
+	"attributes": {
+		"BATTLECRY": true
+	},
+	"collectible": true,
+	"set": "NAXXRAMAS",
+	"fileFormatVersion": 1
+}

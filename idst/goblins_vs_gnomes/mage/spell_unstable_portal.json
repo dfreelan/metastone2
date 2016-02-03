@@ -1,0 +1,21 @@
+{
+	"id": "spell_unstable_portal",
+	"name": "Unstable Portal",
+	"baseManaCost": 2,
+	"type": "SPELL",
+	"heroClass": "MAGE",
+	"rarity": "RARE",
+	"description": "Add a random minion to your hand. It costs (3) less.",
+	"targetSelection": "NONE",
+	"spell": {
+		"class": "ReceiveRandomCollectibleCardSpell",
+		"manaModifier": -3,
+		"cardFilter": {
+			"class": "CardFilter",
+			"cardType": "MINION"
+		}
+	},
+	"collectible": true,
+	"set": "GOBLINS_VS_GNOMES",
+	"fileFormatVersion": 1
+}

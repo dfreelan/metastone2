@@ -1,0 +1,17 @@
+{
+	"id": "hero_power_mind_shatter",
+	"name": "Mind Shatter",
+	"baseManaCost": 2,
+	"type": "HERO_POWER",
+	"heroClass": "PRIEST",
+	"rarity": "EPIC",
+	"description": "Deal 3 damage.",
+	"targetSelection": "ANY",
+	"spell": {
+		"class": "DamageSpell",
+		"value": 3
+	},
+	"collectible": false,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

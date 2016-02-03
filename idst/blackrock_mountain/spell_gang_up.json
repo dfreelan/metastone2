@@ -1,0 +1,17 @@
+{
+	"id": "spell_gang_up",
+	"name": "Gang Up",
+	"baseManaCost": 2,
+	"type": "SPELL",
+	"heroClass": "ROGUE",
+	"rarity": "COMMON",
+	"description": "Choose a minion. Shuffle 3 copies of it into your deck.",
+	"targetSelection": "MINIONS",
+	"spell": {
+		"class": "ShuffleToDeckSpell",
+		"howMany": 3
+	},
+	"collectible": true,
+	"set": "BLACKROCK_MOUNTAIN",
+	"fileFormatVersion": 1
+}

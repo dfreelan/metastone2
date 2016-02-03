@@ -1,0 +1,27 @@
+{
+	"id": "spell_conceal",
+	"name": "Conceal",
+	"baseManaCost": 1,
+	"type": "SPELL",
+	"heroClass": "ROGUE",
+	"rarity": "COMMON",
+	"description": "Give your minions Stealth until your next turn.",
+	"targetSelection": "NONE",
+	"spell": {
+		"class": "AddAttributeSpell",
+		"target": "FRIENDLY_MINIONS",
+		"filter": {
+			"class": "AttributeFilter",
+			"attribute": "STEALTH",
+			"operation": "HAS",
+			"invert": true
+		},
+		"attribute": "STEALTH",
+		"revertTrigger": {
+			"class": "TurnStartTrigger"
+		}
+	},
+	"collectible": true,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

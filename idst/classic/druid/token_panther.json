@@ -1,0 +1,15 @@
+{
+	"id": "token_panther",
+	"name": "Panther",
+	"baseManaCost": 2,
+	"type": "MINION",
+	"baseAttack": 3,
+	"baseHp": 2,
+	"heroClass": "DRUID",
+	"rarity": "COMMON",
+	"description": "",
+	"race": "BEAST",
+	"collectible": false,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

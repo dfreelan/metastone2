@@ -48,6 +48,14 @@ public abstract class Actor extends Entity {
 	public Actor clone() {
 		Actor clone = (Actor) super.clone();
 		clone.attributes = new EnumMap<>(getAttributes());
+                
+                //for(Object o : clone.attributes.values()){
+                //    System.err.println("object in actor arr is " + o.getClass().getName());
+                //}
+                BattlecryAction a = (BattlecryAction)clone.attributes.get(Attribute.BATTLECRY);
+                if(a!=null){
+                    clone.attributes.replace(Attribute.BATTLECRY, a);
+                }
 		clone.spellTrigger = spellTrigger != null ? spellTrigger.clone() : null;
 		if (hasAttribute(Attribute.DEATHRATTLES)) {
 			clone.removeAttribute(Attribute.DEATHRATTLES);

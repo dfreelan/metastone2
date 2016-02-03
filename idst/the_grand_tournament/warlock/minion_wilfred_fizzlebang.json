@@ -1,0 +1,27 @@
+{
+	"id": "minion_wilfred_fizzlebang",
+	"name": "Wilfred Fizzlebang",
+	"baseManaCost": 6,
+	"type": "MINION",
+	"baseAttack": 4,
+	"baseHp": 4,
+	"heroClass": "WARLOCK",
+	"rarity": "LEGENDARY",
+	"description": "Cards you draw from your Hero Power cost (0).",
+	"trigger": {
+		"eventTrigger": {
+			"class": "CardDrawnTrigger",
+			"sourceType": "HERO_POWER",
+			"targetPlayer": "SELF"
+		},
+		"spell": {
+			"class": "ModifyAttributeSpell",
+			"target": "EVENT_TARGET",
+			"value": -99,
+			"attribute": "MANA_COST_MODIFIER"
+		}
+	},
+	"collectible": true,
+	"set": "THE_GRAND_TOURNAMENT",
+	"fileFormatVersion": 1
+}

@@ -92,7 +92,6 @@ public class GameStateValueBehaviour extends Behaviour {
 	@Override
 	public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
 		//System.err.println("behavior.threat");
-
 		if (validActions.size() == 1) {
 			return validActions.get(0);
 		}
@@ -120,6 +119,7 @@ public class GameStateValueBehaviour extends Behaviour {
 	}
 
 	private void requestTrainingData(Player player) {
+            
 		if (heuristic != null) {
 			return;
 		}

@@ -76,10 +76,12 @@ public class ThreatBasedHeuristic implements IGameStateHeuristic {
 	private final FeatureVector weights;
 
 	public ThreatBasedHeuristic(FeatureVector vector) {
+            
 		this.weights = vector;
 	}
 
 	private double calculateMinionScore(Minion minion, ThreatLevel threatLevel) {
+          
 		if (minion.hasAttribute(Attribute.MARKED_FOR_DEATH)) {
 			return 0;
 		}

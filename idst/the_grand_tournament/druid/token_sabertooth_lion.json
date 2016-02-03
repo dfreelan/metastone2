@@ -1,0 +1,18 @@
+{
+	"id": "token_sabertooth_lion",
+	"name": "Sabertooth Lion",
+	"baseManaCost": 2,
+	"type": "MINION",
+	"baseAttack": 2,
+	"baseHp": 1,
+	"heroClass": "DRUID",
+	"rarity": "COMMON",
+	"description": "Charge",
+	"race": "BEAST",
+	"attributes": {
+		"CHARGE": true
+	},
+	"collectible": false,
+	"set": "THE_GRAND_TOURNAMENT",
+	"fileFormatVersion": 1
+}

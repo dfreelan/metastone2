@@ -13,106 +13,110 @@ import net.demilich.metastone.game.targeting.TargetSelection;
 
 public class BattlecryAction extends GameAction {
 
-	public static BattlecryAction createBattlecry(SpellDesc spell) {
-		return createBattlecry(spell, TargetSelection.NONE);
-	}
+    public static BattlecryAction createBattlecry(SpellDesc spell) {
+        return createBattlecry(spell, TargetSelection.NONE);
+    }
 
-	public static BattlecryAction createBattlecry(SpellDesc spell, TargetSelection targetSelection) {
-		BattlecryAction battlecry = new BattlecryAction(spell);
-		battlecry.setTargetRequirement(targetSelection);
-		return battlecry;
-	}
+    public static BattlecryAction createBattlecry(SpellDesc spell, TargetSelection targetSelection) {
+        BattlecryAction battlecry = new BattlecryAction(spell);
+        battlecry.setTargetRequirement(targetSelection);
+        return battlecry;
+    }
 
-	private final SpellDesc spell;
-	private boolean resolvedLate = false;
-	private Condition condition;
+    private final SpellDesc spell;
+    private boolean resolvedLate = false;
+    private Condition condition;
 
-	protected BattlecryAction(SpellDesc spell) {
-		this.spell = spell;
-		setActionType(ActionType.BATTLECRY);
-	}
+    protected BattlecryAction(SpellDesc spell) {
+        this.spell = spell;
+        setActionType(ActionType.BATTLECRY);
+    }
 
-	public boolean canBeExecuted(GameContext context, Player player) {
-		if (getCondition() == null) {
-			return true;
-		}
-		return getCondition().isFulfilled(context, player, null);
-	}
+    public boolean canBeExecuted(GameContext context, Player player) {
+        if (getCondition() == null) {
+            return true;
+        }
+        return getCondition().isFulfilled(context, player, null);
+    }
 
-	@Override
-	public final boolean canBeExecutedOn(GameContext context, Player player, Entity entity) {
-		if (!super.canBeExecutedOn(context, player, entity)) {
-			return false;
-		}
-		if (getSource().getId() == entity.getId()) {
-			return false;
-		}
-		if (getEntityFilter() == null) {
-			return true;
-		}
-		return getEntityFilter().matches(context, player, entity);
-	}
+    @Override
+    public final boolean canBeExecutedOn(GameContext context, Player player, Entity entity) {
+        if (!super.canBeExecutedOn(context, player, entity)) {
+            return false;
+        }
+        if (getSource().getId() == entity.getId()) {
+            return false;
+        }
+        if (getEntityFilter() == null) {
+            return true;
+        }
+        return getEntityFilter().matches(context, player, entity);
+    }
 
-	@Override
-	public BattlecryAction clone() {
-		BattlecryAction clone = BattlecryAction.createBattlecry(getSpell(), getTargetRequirement());
-		clone.setActionSuffix(getActionSuffix());
-		clone.setResolvedLate(isResolvedLate());
-		clone.setSource(getSource());
-                clone.setTargetKey(this.getTargetKey());
-                clone.setActionSuffix(this.getActionSuffix());
-                        /*private EntityReference source;
-	private EntityReference targetKey;
-	private String actionSuffix;*/
-		return clone;
-	}
+    @Override
+    public BattlecryAction clone() {
+        BattlecryAction clone = BattlecryAction.createBattlecry(getSpell().clone(), getTargetRequirement());
+        clone.setActionSuffix(getActionSuffix());
+        clone.setResolvedLate(isResolvedLate());
+        if (this.getSource() != null) {
+            clone.setSource(new EntityReference(getSource().getId()));
+        }
+        if (this.getTargetKey() != null) {
+            clone.setTargetKey(new EntityReference(this.getTargetKey().getId()));
+        }
+        clone.setActionSuffix(this.getActionSuffix());
+        /*private EntityReference source;
+         private EntityReference targetKey;
+         private String actionSuffix;*/
+        return clone;
+    }
 
-	@Override
-	public void execute(GameContext context, int playerId) {
-		EntityReference target = getSpell().hasPredefinedTarget() ? getSpell().getTarget() : getTargetKey();
-		context.getLogic().castSpell(playerId, getSpell(), getSource(), target, false);
-	}
+    @Override
+    public void execute(GameContext context, int playerId) {
+        EntityReference target = getSpell().hasPredefinedTarget() ? getSpell().getTarget() : getTargetKey();
+        context.getLogic().castSpell(playerId, getSpell(), getSource(), target, false);
+    }
 
-	private Condition getCondition() {
-		return condition;
-	}
+    private Condition getCondition() {
+        return condition;
+    }
 
-	public EntityFilter getEntityFilter() {
-		return spell.getEntityFilter();
-	}
+    public EntityFilter getEntityFilter() {
+        return spell.getEntityFilter();
+    }
 
-	@Override
-	public String getPromptText() {
-		return "[Battlecry]";
-	}
+    @Override
+    public String getPromptText() {
+        return "[Battlecry]";
+    }
 
-	public SpellDesc getSpell() {
-		return spell;
-	}
+    public SpellDesc getSpell() {
+        return spell;
+    }
 
-	public boolean isResolvedLate() {
-		return resolvedLate;
-	}
+    public boolean isResolvedLate() {
+        return resolvedLate;
+    }
 
-	@Override
-	public boolean isSameActionGroup(GameAction anotherAction) {
-		return anotherAction.getActionType() == getActionType();
-	}
+    @Override
+    public boolean isSameActionGroup(GameAction anotherAction) {
+        return anotherAction.getActionType() == getActionType();
+    }
 
-	public void setCondition(Condition condition) {
-		this.condition = condition;
-	}
+    public void setCondition(Condition condition) {
+        this.condition = condition;
+    }
 
-	public void setEntityFilter(Predicate<Entity> entityFilter) {
-		// this.entityFilter = entityFilter;
-	}
+    public void setEntityFilter(Predicate<Entity> entityFilter) {
+        // this.entityFilter = entityFilter;
+    }
 
-	public void setResolvedLate(boolean resolvedLate) {
-		this.resolvedLate = resolvedLate;
-	}
+    public void setResolvedLate(boolean resolvedLate) {
+        this.resolvedLate = resolvedLate;
+    }
 
-	@Override
-	public String toString() {
-		return String.format("[%s '%s' resolvedLate:%s]", getActionType(), getSpell().getSpellClass().getSimpleName(), resolvedLate);
-	}
+    @Override
+    public String toString() {
+        return String.format("[%s '%s' resolvedLate:%s]", getActionType(), getSpell().getSpellClass().getSimpleName(), resolvedLate);
+    }
 }

@@ -1,0 +1,24 @@
+{
+	"id": "minion_gahzrilla",
+	"name": "Gahz'rilla",
+	"baseManaCost": 7,
+	"type": "MINION",
+	"baseAttack": 6,
+	"baseHp": 9,
+	"heroClass": "HUNTER",
+	"rarity": "LEGENDARY",
+	"description": "Whenever this minion takes damage, double its Attack.",
+	"trigger": {
+		"eventTrigger": {
+			"class": "SelfDamagedTrigger"
+		},
+		"spell": {
+			"class": "DoubleAttackSpell",
+			"target": "SELF"
+		}
+	},
+	"race": "BEAST",
+	"collectible": true,
+	"set": "GOBLINS_VS_GNOMES",
+	"fileFormatVersion": 1
+}

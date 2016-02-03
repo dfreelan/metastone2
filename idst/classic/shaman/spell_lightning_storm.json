@@ -1,0 +1,21 @@
+{
+	"id": "spell_lightning_storm",
+	"name": "Lightning Storm",
+	"baseManaCost": 3,
+	"type": "SPELL",
+	"heroClass": "SHAMAN",
+	"rarity": "RARE",
+	"description": "Deal 2-3 damage to all enemy minions. Overload: (2)",
+	"targetSelection": "NONE",
+	"spell": {
+		"class": "MinMaxDamageSpell",
+		"target": "ENEMY_MINIONS",
+		"minDamage": 2,
+		"maxDamage": 3
+	},
+	"attributes": {
+		"OVERLOAD": 2
+	},
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

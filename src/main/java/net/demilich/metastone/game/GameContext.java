@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import net.demilich.metastone.game.actions.ActionType;
 import net.demilich.metastone.game.actions.GameAction;
+import net.demilich.metastone.game.behaviour.experimentalMCTS.ExperimentalMCTS;
 import net.demilich.metastone.game.cards.Card;
 import net.demilich.metastone.game.cards.CardCollection;
 import net.demilich.metastone.game.cards.costmodifier.CardCostModifier;
@@ -93,74 +94,74 @@ public class GameContext implements Cloneable, IDisposable {
         for (CardCostModifier cardCostModifier : cardCostModifiers) {
             clone.cardCostModifiers.add(cardCostModifier.clone());
         }
-        
+
         /*	SUMMON_STACK,
-	SUMMONED_WEAPON,
-	KILLED_MINION,
-	PENDING_CARD,
-	TARGET_OVERRIDE,
-	ATTACKER,
-	EVENT_TARGET,
-	TARGET,
-	TRANSFORM,*/
+         SUMMONED_WEAPON,
+         KILLED_MINION,
+         PENDING_CARD,
+         TARGET_OVERRIDE,
+         ATTACKER,
+         EVENT_TARGET,
+         TARGET,
+         TRANSFORM,*/
         HashMap cloneMap = clone.getEnvironment();
-        Stack<Minion> newStack = (Stack<Minion>)((Stack<Minion>)getEnvironment().get(Environment.SUMMON_STACK));
-        if(newStack!=null){
-            newStack = (Stack<Minion>)newStack.clone();
-            for(int i = 0; i<newStack.size(); i++){
-                newStack.set(i,(Minion)((Minion)newStack.get(i)).clone());
+        Stack<Minion> newStack = (Stack<Minion>) ((Stack<Minion>) getEnvironment().get(Environment.SUMMON_STACK));
+        if (newStack != null) {
+            newStack = (Stack<Minion>) newStack.clone();
+            for (int i = 0; i < newStack.size(); i++) {
+                newStack.set(i, (Minion) ((Minion) newStack.get(i)).clone());
             }
             cloneMap.put(Environment.SUMMON_STACK, newStack);
         }
         Card pending = (Card) getEnvironment().get(Environment.PENDING_CARD);
-        if(pending!=null){
+        if (pending != null) {
             pending = pending.clone();
             cloneMap.put(Environment.PENDING_CARD, pending);
         }
-        Entity summonedWeapon = (Entity)this.getEnvironment().get(Environment.SUMMONED_WEAPON);
-        if(summonedWeapon != null){
-            summonedWeapon = (Entity)summonedWeapon.clone();
+        Entity summonedWeapon = (Entity) this.getEnvironment().get(Environment.SUMMONED_WEAPON);
+        if (summonedWeapon != null) {
+            summonedWeapon = (Entity) summonedWeapon.clone();
             cloneMap.put(Environment.SUMMONED_WEAPON, summonedWeapon);
         }
-        
-        Entity targetOverride = (Entity)this.getEnvironment().get(Environment.TARGET_OVERRIDE);
-        if(targetOverride!=null){
-            targetOverride = (Entity)targetOverride.clone();
+
+        Entity targetOverride = (Entity) this.getEnvironment().get(Environment.TARGET_OVERRIDE);
+        if (targetOverride != null) {
+            targetOverride = (Entity) targetOverride.clone();
             cloneMap.put(Environment.TARGET_OVERRIDE, targetOverride);
         }
-        
+
         Entity killedMinion = (Entity) this.getEnvironment().get(Environment.KILLED_MINION);
-        if(killedMinion != null){
-            killedMinion = (Entity)targetOverride.clone();
+        if (killedMinion != null) {
+            killedMinion = (Entity) targetOverride.clone();
             cloneMap.put(Environment.KILLED_MINION, killedMinion);
         }
-        
-        Entity attacker = (Entity)this.getEnvironment().get(Environment.ATTACKER);
-        if(attacker!=null){
-            attacker = (Entity)attacker.clone();
+
+        Entity attacker = (Entity) this.getEnvironment().get(Environment.ATTACKER);
+        if (attacker != null) {
+            attacker = (Entity) attacker.clone();
             cloneMap.put(Environment.ATTACKER, attacker);
         }
         /*EVENT_TARGET,
-	TARGET,
-	TRANSFORM*/
-        Entity eventTarget = (Entity)this.getEnvironment().get(Environment.EVENT_TARGET);
-        if(eventTarget !=null){
-            eventTarget = (Entity)eventTarget.clone();
+         TARGET,
+         TRANSFORM*/
+        Entity eventTarget = (Entity) this.getEnvironment().get(Environment.EVENT_TARGET);
+        if (eventTarget != null) {
+            eventTarget = (Entity) eventTarget.clone();
             cloneMap.put(Environment.EVENT_TARGET, eventTarget);
         }
-        
-        Entity target = (Entity)this.getEnvironment().get(Environment.TARGET);
-        if(target !=null){
-            target = (Entity)target.clone();
+
+        Entity target = (Entity) this.getEnvironment().get(Environment.TARGET);
+        if (target != null) {
+            target = (Entity) target.clone();
             cloneMap.put(Environment.TARGET, target);
         }
-        
-        Minion transform = (Minion)this.getEnvironment().get(Environment.TRANSFORM);
-        if(transform!=null){
+
+        Minion transform = (Minion) this.getEnvironment().get(Environment.TRANSFORM);
+        if (transform != null) {
             transform = transform.clone();
             cloneMap.put(Environment.TRANSFORM, transform);
         }
-        
+
         clone.getLogic().setLoggingEnabled(false);
         return clone;
     }
@@ -375,6 +376,7 @@ public class GameContext implements Cloneable, IDisposable {
         onGameStateChanged();
     }
     private double total0Wins = 0;
+
     public void play() {
 
         logger.debug("Game starts: " + getPlayer1().getName() + " VS. " + getPlayer2().getName());
@@ -387,11 +389,11 @@ public class GameContext implements Cloneable, IDisposable {
                 break;
             }
         }
-        if(this.getWinningPlayerId() == 0 ){
+        if (this.getWinningPlayerId() == 0) {
             total0Wins++;
         }
        // System.err.println("player zero has won " + total0Wins + " times");
-       // System.out.println("player " + this.getWinningPlayerId() + " wins!");
+        // System.out.println("player " + this.getWinningPlayerId() + " wins!");
         endGame();
     }
 
@@ -401,7 +403,8 @@ public class GameContext implements Cloneable, IDisposable {
             if (!resuming) {
                 startTurn(activePlayer);
             }
-            while (playTurn()) {}
+            while (playTurn()) {
+            }
             if (getTurn() > GameLogic.TURN_LIMIT) {
                 break;
             }
@@ -413,17 +416,21 @@ public class GameContext implements Cloneable, IDisposable {
     public boolean playTurn() {
         if (++actionsThisTurn > 99) {
             //logger.warn("Turn has been forcefully ended after {} actions", actionsThisTurn);
-			//System.err.println("ERROR\n\n\n" + this);
-               try{
-                        
-             throw new RuntimeException(" more than 100 actions? really? " );
-                        
-             }catch(RuntimeException e){
-                 System.err.println(this);
-             System.err.println("ACTIONS AVAILABLE: " + getValidActions());
-             e.printStackTrace();
-             System.exit(0);
-             }
+            //System.err.println("ERROR\n\n\n" + this);
+            try {
+
+                throw new RuntimeException(" more than 100 actions? really? ");
+
+            } catch (RuntimeException e) {
+                System.err.println(this);
+                System.err.println("ACTIONS AVAILABLE: " + getValidActions());
+                
+                e.printStackTrace();
+                System.err.println("last played action " + ExperimentalMCTS.lastPlayedAction);
+                
+                
+                System.exit(0);
+            }
             endTurn();
             return false;
         }
@@ -442,7 +449,7 @@ public class GameContext implements Cloneable, IDisposable {
             throw new RuntimeException("Behaviour " + getActivePlayer().getBehaviour().getName() + " selected NULL action while "
                     + getValidActions().size() + " actions were available");
         }
-        
+
         performAction(activePlayer, nextAction);
 
         return nextAction.getActionType() != ActionType.END_TURN;

@@ -1,0 +1,29 @@
+{
+	"id": "minion_anubarak",
+	"name": "Anub'arak",
+	"baseManaCost": 9,
+	"type": "MINION",
+	"baseAttack": 8,
+	"baseHp": 4,
+	"heroClass": "ROGUE",
+	"rarity": "LEGENDARY",
+	"description": "Deathrattle: Return this to your hand and summon a 4/4 Nerubian.",
+	"deathrattle": {
+		"class": "MetaSpell",
+		"spell1": {
+			"class": "ReturnMinionToHandSpell",
+			"target": "SELF"
+		},
+		"spell2": {
+			"class": "SummonSpell",
+			"card": "token_nerubian"
+		},
+		"target": "NONE"
+	},
+	"attributes": {
+		"DEATHRATTLES": true
+	},
+	"collectible": true,
+	"set": "THE_GRAND_TOURNAMENT",
+	"fileFormatVersion": 1
+}

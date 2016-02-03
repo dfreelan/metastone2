@@ -51,21 +51,21 @@ import net.demilich.metastone.game.targeting.CardLocation;
 //back to mulligan >3
 //
 public class ExperimentalMCTS extends Behaviour {
+    
 
-    private Random random = new Random();
-    private ArrayList<GameAction> turnPlan = null;
     int numTrees;
     int numRollouts;
     double exploreFactor;
-    private final boolean deterministic;
+    public static GameAction lastPlayedAction = null;
     String name = "Experimental MCTS";
-    public double[][] results;
-    private IGameStateHeuristic heuristic  = new ThreatBasedHeuristic(FeatureVector.getDefault());
+
+    private IGameStateHeuristic heuristic = new ThreatBasedHeuristic(FeatureVector.getDefault());
+
     public ExperimentalMCTS(int numRollouts, int numTrees, double exploreFactor, boolean deterministic) {
         this.numTrees = numTrees;
         this.numRollouts = numRollouts;
         this.exploreFactor = exploreFactor;
-        this.deterministic = deterministic;
+       
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ExperimentalMCTS extends Behaviour {
     public List<Card> mulligan(GameContext context, Player player, List<Card> cards) {
         List<Card> discardedCards = new ArrayList<Card>();
         for (Card card : cards) {
-           if (card.getBaseManaCost() > 4) {
+            if (card.getBaseManaCost() > 4) {
                 discardedCards.add(card);
             }
         }
@@ -92,7 +92,25 @@ public class ExperimentalMCTS extends Behaviour {
 
     @Override
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
-        
+        TreeWrapper myTree = new TreeWrapper(numRollouts,numTrees,exploreFactor);
+        return myTree.getAction(context,player,validActions);
+    }
+
+}
+
+class TreeWrapper {
+
+    public double[][] results;
+    int numTrees;
+    int numRollouts;
+    double exploreFactor;
+    
+    public TreeWrapper(int numRollouts, int numTrees, double exploreFactor) {
+        this.numTrees = numTrees;
+        this.numRollouts = numRollouts;
+        this.exploreFactor = exploreFactor;
+    }
+    public GameAction getAction(GameContext context, Player player, List<GameAction> validActions){
         GameContext simulation = context.clone();
         for (int i = 0; i < validActions.size(); i++) {
             GameAction action = validActions.get(i);
@@ -107,22 +125,19 @@ public class ExperimentalMCTS extends Behaviour {
         }
 
         GameAction winner = null;
-        //System.err.println("turn start");
 
-        // double cumulativeWins[] = new double[validActions.size()];
-        //double cumulativeTries[] = new double[validActions.size()];
         results = new double[numTrees][validActions.size()];
         IntStream.range(0, numTrees)
-                .parallel()
+                .sequential()
                 .forEach((int i) -> getProbabilities(simulation.clone(), validActions, player.clone(), i));
-       //for(int i = 0; i<gameForest.length; i++){
+        //for(int i = 0; i<gameForest.length; i++){
         //   getProbabilities(gameForest[i],simulation,validActions, player, i);
         //}
 
         double totalScore[] = new double[validActions.size()];
         for (int a = 0; a < results.length; a++) {
             for (int i = 0; i < results[a].length; i++) {
-                totalScore[i] += results[a][i]/numTrees;
+                totalScore[i] += results[a][i] / numTrees;
             }
         }
         double bestScore = Double.NEGATIVE_INFINITY;
@@ -135,73 +150,40 @@ public class ExperimentalMCTS extends Behaviour {
                 secondBestAction = bestAction;
                 bestAction = validActions.get(i);
                 bestScore = totalScore[i];
-                
-            }else if(secondBestScore< totalScore[i]){
+
+            } else if (secondBestScore < totalScore[i]) {
                 secondBestAction = validActions.get(i);
                 secondBestScore = totalScore[i];
             }
-            System.err.println("action " + validActions.get(i) + " fitness: " + totalScore[i]);
+            //System.err.println("action " + validActions.get(i) + " fitness: " + totalScore[i]);
         }
-        
+
         /*if(bestScore-secondBestScore < .025){
-            GameContext bestContext = context.clone();
-            bestContext.getLogic().performGameAction(player.getId(), bestAction);
-            double bestH = heuristic.getScore(bestContext, player.getId());
+         GameContext bestContext = context.clone();
+         bestContext.getLogic().performGameAction(player.getId(), bestAction);
+         double bestH = heuristic.getScore(bestContext, player.getId());
             
-            GameContext secondBestContext = context.clone();
-            secondBestContext.getLogic().performGameAction(player.getId(), secondBestAction);
-            double secondBestH = heuristic.getScore(secondBestContext, player.getId());
+         GameContext secondBestContext = context.clone();
+         secondBestContext.getLogic().performGameAction(player.getId(), secondBestAction);
+         double secondBestH = heuristic.getScore(secondBestContext, player.getId());
             
-            if(bestH >= secondBestH){
-                winner = bestAction;
-            }else{
-                winner = secondBestAction;
-            }
-        }else{
-            winner = bestAction;
-        }*/
+         if(bestH >= secondBestH){
+         winner = bestAction;
+         }else{
+         winner = secondBestAction;
+         }
+         }else{
+         winner = bestAction;
+         }*/
+        if(bestAction.getActionType()!=ActionType.PHYSICAL_ATTACK){
+            ExperimentalMCTS.lastPlayedAction = bestAction;
+        }
         winner = bestAction;
-            
-        
+
         //System.err.println("ROBOT action was: " + bestAction + " turn is "  + context.getTurn());
-       
         return winner;
     }
-
-    public void getProbabilities(GameContext simulation, List<GameAction> validActions, Player player, int index) {
-        MCTSTree gameTree;
-        
-        RandomizeSimulation(simulation,simulation.getPlayer(player.getId()));
-
-        gameTree = new MCTSTree(numRollouts / numTrees, validActions, simulation, exploreFactor, deterministic);
-        gameTree.getBestAction();
-        //f(index==0){
-        //   System.err.println("HEY THIS HAPPEND");
-        
-       
-        //}
-        MCTSTreeNode root = gameTree.root;
-        
-        
-        //accumulate results
-        for (int a = 0; a < root.children.size(); a++) {
-            MCTSTreeNode child = root.children.get(a);
-            results[index][a] += child.totValue[player.getId()] / child.nVisits;
-            if(child.totValue[player.getId()]  == 0){
-                System.err.println("it was 0, but i visisted it " + child.nVisits + " times");
-                System.err.println("enemy wins " + child.totValue[player.getId()] + " times");
-                System.err.println(child.action + " times");
-            }
-        }
-       // if(results[index][0]>results[index][1]){
-       //      gameTree.saveTreeToDot("/home/dfreelan/gametree" + index + ".txt");
-        //}
-        //give the GC something to do.
-        root = null;
-        gameTree = null;
-        return;
-    }
-    public void RandomizeSimulation(GameContext simulation, Player player){
+    public void RandomizeSimulation(GameContext simulation, Player player) {
         simulation.getPlayer2().getDeck().shuffle();
         simulation.getPlayer1().getDeck().shuffle();
         Player opponent;
@@ -220,5 +202,37 @@ public class ExperimentalMCTS extends Behaviour {
         for (int a = 0; a < handSize; a++) {
             simulation.getLogic().receiveCard(opponent.getId(), opponent.getDeck().removeFirst());
         }
+    }
+
+    public void getProbabilities(GameContext simulation, List<GameAction> validActions, Player player, int index) {
+        MCTSTree gameTree;
+
+        RandomizeSimulation(simulation, simulation.getPlayer(player.getId()));
+
+        gameTree = new MCTSTree(numRollouts / numTrees, validActions, simulation, exploreFactor, false);
+        gameTree.getBestAction();
+        //f(index==0){
+        //   System.err.println("HEY THIS HAPPEND");
+
+        //}
+        MCTSTreeNode root = gameTree.root;
+
+        //accumulate results
+        for (int a = 0; a < root.children.size(); a++) {
+            MCTSTreeNode child = root.children.get(a);
+            results[index][a] += child.totValue[player.getId()] / child.nVisits;
+            //if(child.totValue[player.getId()]  == 0){
+            //  System.err.println("it was 0, but i visisted it " + child.nVisits + " times");
+            //  System.err.println("enemy wins " + child.totValue[player.getId()] + " times");
+            //  System.err.println(child.action + " times");
+            //}
+        }
+       // if(results[index][0]>results[index][1]){
+        //      gameTree.saveTreeToDot("/home/dfreelan/gametree" + index + ".txt");
+        //}
+        //give the GC something to do.
+        root = null;
+        gameTree = null;
+        return;
     }
 }

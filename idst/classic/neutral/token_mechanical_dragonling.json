@@ -1,0 +1,15 @@
+{
+	"id": "token_mechanical_dragonling",
+	"name": "Mechanical Dragonling",
+	"baseManaCost": 1,
+	"type": "MINION",
+	"baseAttack": 2,
+	"baseHp": 1,
+	"heroClass": "ANY",
+	"rarity": "FREE",
+	"description": "",
+	"race": "MECH",
+	"collectible": false,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

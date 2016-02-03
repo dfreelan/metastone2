@@ -1,0 +1,14 @@
+{
+	"id": "token_damaged_golem",
+	"name": "Damaged Golem",
+	"baseManaCost": 1,
+	"type": "MINION",
+	"baseAttack": 2,
+	"baseHp": 1,
+	"heroClass": "ANY",
+	"rarity": "COMMON",
+	"race": "MECH",
+	"collectible": false,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

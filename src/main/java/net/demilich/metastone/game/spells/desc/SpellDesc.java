@@ -9,6 +9,7 @@ import net.demilich.metastone.game.spells.Spell;
 import net.demilich.metastone.game.spells.TargetPlayer;
 import net.demilich.metastone.game.spells.desc.filter.EntityFilter;
 import net.demilich.metastone.game.spells.desc.valueprovider.ValueProvider;
+import net.demilich.metastone.game.targeting.CardLocation;
 import net.demilich.metastone.game.targeting.EntityReference;
 
 public class SpellDesc extends Desc<SpellArg> {
@@ -36,14 +37,26 @@ public class SpellDesc extends Desc<SpellArg> {
 	}
 
 	@Override
-	public SpellDesc clone() {
+	public SpellDesc clone()  {
 		SpellDesc clone = new SpellDesc(build(getSpellClass()));
 		for (SpellArg spellArg : arguments.keySet()) {
 			Object value = arguments.get(spellArg);
-			if (value instanceof CustomCloneable) {
+			if (value instanceof CustomCloneable ){
 				CustomCloneable cloneable = (CustomCloneable) value;
 				clone.arguments.put(spellArg, cloneable.clone());
-			} else {
+			} else if(value instanceof SpellDesc){
+                            //clone.arguments.put(spellArg, value);
+                            clone.arguments.put(spellArg, ((SpellDesc)value).clone());
+                        }else if(value instanceof EntityReference){
+                            //value = new EntityReference(((EntityReference)value).getId());
+                            
+                            clone.arguments.put(spellArg, value);
+                        }
+                        else if(value instanceof Cloneable){
+                              // System.err.println("is cloneable, but not caught yet: " + value.getClass().getName());
+                               clone.arguments.put(spellArg, value);
+                        }else{
+                            //System.err.println("not cloneable: " + value.getClass().getName());
 				clone.arguments.put(spellArg, value);
 			}
 		}

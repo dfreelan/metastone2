@@ -1,0 +1,14 @@
+{
+	"id": "token_murloc_scout",
+	"name": "Murloc Scout",
+	"baseManaCost": 0,
+	"type": "MINION",
+	"baseAttack": 1,
+	"baseHp": 1,
+	"heroClass": "ANY",
+	"rarity": "FREE",
+	"race": "MURLOC",
+	"collectible": false,
+	"set": "CLASSIC",
+	"fileFormatVersion": 1
+}

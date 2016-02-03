@@ -1,0 +1,27 @@
+{
+	"id": "minion_ogre_brute",
+	"name": "Ogre Brute",
+	"baseManaCost": 3,
+	"type": "MINION",
+	"baseAttack": 4,
+	"baseHp": 4,
+	"heroClass": "ANY",
+	"rarity": "COMMON",
+	"description": "50% chance to attack the wrong enemy.",
+	"trigger": {
+		"eventTrigger": {
+			"class": "HostAcquiresTargetTrigger",
+			"actionType": "PHYSICAL_ATTACK",
+			"condition": {
+				"class": "RandomCondition"
+			}
+		},
+		"spell": {
+			"class": "FumbleSpell",
+			"target": "EVENT_TARGET"
+		}
+	},
+	"collectible": true,
+	"set": "GOBLINS_VS_GNOMES",
+	"fileFormatVersion": 1
+}
