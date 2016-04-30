@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import net.demilich.metastone.game.Environment;
 
 import net.demilich.metastone.game.GameContext;
 import net.demilich.metastone.game.Player;
@@ -19,6 +20,7 @@ import net.demilich.metastone.game.behaviour.threat.FeatureVector;
 import net.demilich.metastone.game.behaviour.threat.ThreatBasedHeuristic;
 import net.demilich.metastone.game.cards.Card;
 import net.demilich.metastone.game.cards.CardCollection;
+import net.demilich.metastone.game.targeting.CardReference;
 
 /*
  * 
@@ -44,21 +46,22 @@ public class MCTSTreeNode {
     int activePlayer = -1;
     int winningPlayer = -1;
     double exploreFactor = 1.0;
-    GameAction action;
+    GameAction action = null;
     private boolean firstEndTurn = false;
-
+    boolean isABattleCryNode = false;
+    CardReference prevCardReference=null;
     public MCTSTreeNode(GameContext simulation, double exploreFactor, boolean firstEndTurn) {
         this.context = simulation;
         this.exploreFactor = exploreFactor;
-        //this.rerollEvents = rerollEvents;
-        this.firstEndTurn = firstEndTurn;
-
     }
+    boolean amRoot = false;
+    boolean beingCalledFromResolve = false;
 
     public void selectAction() {
         //context.play();
         List<MCTSTreeNode> visited = new LinkedList<MCTSTreeNode>();
         MCTSTreeNode cur = this;
+        amRoot = true;
         visited.add(this);
         while (!cur.isLeaf()) {
             cur = cur.select();
@@ -70,21 +73,21 @@ public class MCTSTreeNode {
         if (!cur.context.gameDecided()) {
             cur.applyAction();
         }
-
         if (!cur.context.gameDecided()) {
-
             cur.expand(cur.context.getActivePlayerId());
             MCTSTreeNode newNode = cur.select();
             visited.add(newNode);
             
-           // if(newNode.action.getActionType() == ActionType.BATTLECRY)
+            
+            if (!(newNode.action.getActionType()==ActionType.BATTLECRY)) {
+                value = rollOut(newNode, newNode.action);
+            } else {
+                //System.err.println("i selection node with action " + newNode.action.getTargetKey());
+                //System.err.println("i got to this state via action: " + action);
                 value = this.rollOutBattleCry(newNode, newNode.action);
-           // else
-                value = rollOut(newNode);
-
-            if (value == -1) {
-                //  System.err.println("uhh value was -1 after rollout: times" );
             }
+
+            
         } else if (cur.context.getWinningPlayerId() == 0 || cur.context.getWinningPlayerId() == 1) {
             if (cur.context.getWinningPlayerId() == 0) {
                 totValue[0] = Double.POSITIVE_INFINITY;
@@ -93,29 +96,22 @@ public class MCTSTreeNode {
                 totValue[1] = Double.POSITIVE_INFINITY;
                 totValue[0] = Double.NEGATIVE_INFINITY;
             }
-
             value = cur.context.getWinningPlayerId();
-            if (value == -1) {
-                System.err.println("hey.. uh value is weird times");
-            }
         } else {
-            System.err.println("times... i guess");
             totValue[0] = Double.NEGATIVE_INFINITY;
             totValue[1] = Double.NEGATIVE_INFINITY;
             value = -1;
         }
 
         for (MCTSTreeNode node : visited) {
-
             node.updateStats(value);
         }
     }
 
     public double getCost(GameAction action) {
-
-        if (action != null && isCard(action)) {
-            return .1 / (context.getTurn() / 2 + 1);
-        }
+        //if (action != null && isCard(action)) {
+        //    return 0.027;
+        //}
 
         return 0.0;
     }
@@ -136,17 +132,23 @@ public class MCTSTreeNode {
         }
 
         //this.context = this.context.clone();
-        context.getLogic().simulationActive = true;
-        context.getLogic().performGameAction(context.getActivePlayerId(), action);
-        context.getLogic().simulationActive = false;
+        if(action.getActionType() == ActionType.BATTLECRY){
+            context.getLogic().battlecries = null;
+            performBattlecryAction(context,action);
+        }else{
+            context.getLogic().simulationActive = true;
+            context.getLogic().battlecries = null;
+            context.getLogic().performGameAction(context.getActivePlayerId(), action);
+            context.getLogic().simulationActive = false;
+        }
         if (action.getActionType() == ActionType.END_TURN) {
             context.startTurn(context.getActivePlayerId());
         }
         if (context.getLogic().battlecries != null) {
+            //System.err.println("battle cry action happened during simulation!!!!! after applying action " + action);
             actions = context.getLogic().battlecries;
             context.getLogic().battlecries = null;
         } else {
-
             actions = context.getValidActions();
         }
 
@@ -167,8 +169,11 @@ public class MCTSTreeNode {
             //        continue;
             //    }
             //}
-            newNode.action = action.clone();
+            newNode.action = action;
             newNodes.add(newNode);
+            if(this.beingCalledFromResolve){
+                newNode.isABattleCryNode = true;
+            }
             //newNode.parentContext = this.preservedContext;
             //if(this.action!=null)
             //newNode.parentAction = this.action.clone();
@@ -176,6 +181,17 @@ public class MCTSTreeNode {
         }
         children = newNodes;
         this.activePlayer = context.getActivePlayerId();
+        
+        //int needToModify = actions.size()-4;
+        
+       /* while(needToModify>0){
+            int index = r.nextInt(newNodes.size());
+            if(newNodes.get(index).nVisits < Integer.MAX_VALUE){
+                needToModify--;
+                newNodes.get(index).nVisits = Integer.MAX_VALUE;
+            }
+        }*/
+        
 
     }
 
@@ -204,10 +220,14 @@ public class MCTSTreeNode {
         return children == null;
     }
 
-    public double rollOut(MCTSTreeNode tn) {
+    public double rollOut(MCTSTreeNode tn, GameAction battlecry) {
         //play a random game of hearthstone...
 
         GameContext simulation = tn.context.clone();
+        
+        simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);
+        //simulation.getLogic().rolloutActive = true;
+        //simulation.getLogic().checkForDeadEntities();
         simulation.playFromMiddle();
 
         return simulation.getWinningPlayerId();
@@ -215,18 +235,50 @@ public class MCTSTreeNode {
 
     public double rollOutBattleCry(MCTSTreeNode tn, GameAction battlecry) {
         //play a random game of hearthstone... but battlecry first
-
+        //System.err.println("if you get in here it's invalid");
         GameContext simulation = tn.context.clone();
-        simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);
-
+        //simulation.getLogic().rolloutActive = true;
+        performBattlecryAction(simulation,battlecry);
         simulation.playFromMiddle();
 
         return simulation.getWinningPlayerId();
     }
+    public void performBattlecryAction(GameContext simulation, GameAction battlecry){
+         boolean resolvedLate = simulation.getLogic().minion.getBattlecry().isResolvedLate();
+        
+      //  if(resolvedLate){
+       //     simulation.getLogic().preProcessLate();
+       // }
+        simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);
+        simulation.getLogic().checkForDeadEntities();
+        //if(simulation.getLogic().minion!=null && battlecry.getActionType() == ActionType.BATTLECRY && simulation.getLogic().resolveBattlecry){
+        //if (simulation.getLogic().minion != null && battlecry.getActionType() == ActionType.BATTLECRY && simulation.getLogic().resolveBattlecry) {
+        if(resolvedLate){
+            simulation.getLogic().afterBattlecryLate();
+        }else{
+            simulation.getLogic().afterBattlecry();
+        }
+        if(prevCardReference == null){
+            //System.err.println("you tellin me you never played a card  BOI?");
+            //System.exit(0);
+        }
+        //prevCardReference.
+        //prevCardReference = new CardReference(prevCardReference.getPlayerId(), CardLocation.);
+        //System.err.println("did i crash?");
+        simulation.getLogic().afterCardPlayed(context.getActivePlayerId(), simulation.getLogic().source.getCardReference());
+        simulation.getEnvironment().remove(Environment.PENDING_CARD);
+        
+        simulation.getEnvironment().remove(Environment.TARGET);
+        //System.err.println("nope");
 
+        simulation.getLogic().minion = null;
+        simulation.getLogic().resolveBattlecry = false;
+        
+    }
     public void updateStats(double value) {
         nVisits++;
         if (value != -1.0) {
+            
             totValue[(int) value] += 1.0 - this.getCost(action);
         }
     }
@@ -254,7 +306,7 @@ public class MCTSTreeNode {
                 best = fitness;
             }
         }
-        //System.err.println("best action: " + bestAction + " " + best);
+ //       System.err.println("best action: " + bestAction + " " + best);
         return bestAction;
 
     }
@@ -325,12 +377,9 @@ public class MCTSTreeNode {
                 action = ((PlayCardAction) child.action).getCardReference().getCardName();
             }
             contrib += origParent + "->" + parent[0] + " [ label=\"" + action + "\"];\n";
-
             contrib += child.toDot(parent, maxDepth - 1, this.activePlayer);
             //do in that order so we don't have to remember the parent variable we passed in
-
         }
         return contrib;
     }
-
 }

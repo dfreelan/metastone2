@@ -359,7 +359,6 @@ final class DecisionDataBase implements Cloneable {
             modified = false;
         } else {
             prevTurn = context.getTurn();
-
         }
         furfillOrder(context, knowledge, player);
         //Example query = new Example(featureData);
@@ -736,7 +735,7 @@ class MaxBiasedProbability {
                 //  System.err.println("we matched the feature " + stats.featureName + "=" + stats.value);
                 //  System.err.println("it is " + this.percentGood + " on its own");
                 //  System.err.println("but in this situation: " + stats.percentGood);
-                if (stats.percentGood < worstAttribute) {
+                if (stats.percentGood > worstAttribute) {
                     worstAttribute = stats.percentGood;
                 }
             }

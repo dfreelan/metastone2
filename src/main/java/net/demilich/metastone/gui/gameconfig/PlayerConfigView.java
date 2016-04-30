@@ -180,7 +180,7 @@ public class PlayerConfigView extends VBox {
                 //10000 and 30:
                 //39:11 (took 40 minutes!)
                 //36:14 took 43 minutes!
-                ExperimentalMCTS singleton = new ExperimentalMCTS(10000,30,1.2,false);
+                ExperimentalMCTS singleton = new ExperimentalMCTS(40000,15,1.414,false);
                 singleton.setName("10000 and 60 trees, not clairvoyant");
 		behaviourList.add(singleton);
                 

@@ -69,7 +69,7 @@ public class SimulateGamesCommand extends SimpleCommand<GameNotification> {
 
 			@Override
 			public void run() {
-				int cores = Runtime.getRuntime().availableProcessors();
+				int cores = 2;//Runtime.getRuntime().availableProcessors();
 				logger.info("Starting simulation on " + cores + " cores");
 				ExecutorService executor = Executors.newFixedThreadPool(cores);
 				// ExecutorService executor =

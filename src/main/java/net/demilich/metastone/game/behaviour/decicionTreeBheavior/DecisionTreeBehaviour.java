@@ -27,7 +27,7 @@ public class DecisionTreeBehaviour extends Behaviour{
     @Override
     public String getName() {
        return "DecisionTReeBehaviour";
-               }
+    }
 
     @Override
     public List<Card> mulligan(GameContext context, Player player, List<Card> cards) {
@@ -37,28 +37,25 @@ public class DecisionTreeBehaviour extends Behaviour{
     @Override
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
         DecisionTreeBehaviourWrapper decTree = new DecisionTreeBehaviourWrapper();
-        return decTree.requestAction(context.clone(), player.clone(), validActions);
+        return decTree.requestAction(context, player, validActions);
     }
 
 }
  class DecisionTreeBehaviourWrapper{
 
-    private Random random = new Random();
-    TIntIntHashMap hashToIndex;
-    DecisionDataBase features;
+    private final Random random = new Random();
     static DecisionDataBase staticKnowledge = null;
     DecisionDataBase knowledge = null;
     static boolean staticInited = false;
     static int bestOf = 1;
-    public DecisionTreeBehaviourWrapper() {
-
-    }
+    static ArrayList<DecisionDataBase> notUsedKnowledgeInstance = new ArrayList<DecisionDataBase>();
+    static ArrayList<DecisionDataBase> usedKnowledgeInstance = new ArrayList<DecisionDataBase>();
+    
+    public DecisionTreeBehaviourWrapper() {}
 
     // MersenneTwisterFast rand = new MersenneTwisterFast();
    
-
     
-
   
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
         //System.err.println("random player behavior");
@@ -73,7 +70,7 @@ public class DecisionTreeBehaviour extends Behaviour{
         }
         
         if (knowledge == null) {
-            knowledge = (DecisionDataBase) staticKnowledge.clone();
+            knowledge = (DecisionDataBase) staticKnowledge;
         }
         if (validActions.size() == 1) {
             return validActions.get(0);
@@ -84,7 +81,7 @@ public class DecisionTreeBehaviour extends Behaviour{
             GameAction randomAction = validActions.get(randomIndex);
             if (isCard(randomAction)){
                 double dec = knowledge.getDecision(context, ((PlayCardAction) randomAction).getCardReference().getCardName(), player);
-                if (dec <.51) {
+                if (dec <.50) {
                     validActions.remove(randomIndex);
                 } else {
                    return randomAction;

@@ -14,6 +14,7 @@ import net.demilich.metastone.game.behaviour.PlayHighestManaFirst;
 import net.demilich.metastone.game.behaviour.PlayRandomBehaviour;
 import net.demilich.metastone.game.behaviour.PlayRandomOverDepth;
 import net.demilich.metastone.game.behaviour.decicionTreeBheavior.DecisionTreeBehaviour;
+import net.demilich.metastone.game.targeting.CardReference;
 
 public class MCTSTree {
 
@@ -21,16 +22,19 @@ public class MCTSTree {
     public MCTSTreeNode root;
     private GameContext simulation = null;
 
-    public MCTSTree() {}
+    public MCTSTree() {
+    }
 
-    public MCTSTree(int numIterations, List<GameAction> rootActions, GameContext context, double exploreFactor, boolean deterministic) {
+    public MCTSTree(int numIterations, List<GameAction> rootActions, GameContext context, double exploreFactor, boolean battlecry, CardReference prevCardReference) {
         iterations = numIterations;
         this.simulation = context;
         simulation.getPlayer1().setBehaviour(new PlayAllRandomBehavior());
         simulation.getPlayer2().setBehaviour(new PlayAllRandomBehavior());
         //simulation.getOpponent(context.getActivePlayer()).setBehaviour(new PlayRandomBehaviour());
-        root = new MCTSTreeNode(simulation, exploreFactor, deterministic);
+        root = new MCTSTreeNode(simulation, exploreFactor, battlecry);
         root.actions = rootActions;
+        root.beingCalledFromResolve = battlecry;
+        root.prevCardReference = prevCardReference;
     }
 
     public GameAction getBestAction() {
@@ -39,7 +43,6 @@ public class MCTSTree {
         }
         return root.getBestAction();
     }
-
 
     void dispose() {
         killTree(root);
@@ -58,18 +61,18 @@ public class MCTSTree {
     }
 
     void saveTreeToDot(String gametreetxt) {
-       String dotFile = "digraph MCTSTree{";
-       int[] refInt = new int[1];
-       dotFile += root.toDot(refInt,6,simulation.getActivePlayerId());
-       dotFile+="}";
-       try{
-       PrintWriter out = new PrintWriter(gametreetxt);
-       out.write(dotFile);
-       out.close();
-       }catch (Exception e){
-           System.err.println("EXCEPTION DONE");
-           e.printStackTrace();
-       }
+        String dotFile = "digraph MCTSTree{";
+        int[] refInt = new int[1];
+        dotFile += root.toDot(refInt, 4, simulation.getActivePlayerId());
+        dotFile += "}";
+        try {
+            PrintWriter out = new PrintWriter(gametreetxt);
+            out.write(dotFile);
+            out.close();
+        } catch (Exception e) {
+            System.err.println("EXCEPTION DONE");
+            e.printStackTrace();
+        }
     }
 
 }
