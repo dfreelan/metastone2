@@ -383,8 +383,7 @@ public class GameContext implements Cloneable, IDisposable {
         init();
         while (!gameDecided()) {
             startTurn(activePlayer);
-            while (playTurn()) {
-            }
+            while (playTurn()) {}
             if (getTurn() > GameLogic.TURN_LIMIT) {
                 break;
             }

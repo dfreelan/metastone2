@@ -1,5 +1,6 @@
-package net.demilich.metastone.game.behaviour.experimentalMCTS;
+package net.demilich.metastone.bahaviour.ModifiedMCTS;
 
+import net.demilich.metastone.game.behaviour.experimentalMCTS.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -73,7 +74,12 @@ import net.demilich.metastone.game.targeting.CardReference;
 //30:20 mulligan >4
 //back to mulligan >3
 //
-public class ExperimentalMCTS extends Behaviour {
+
+
+//TODO:
+//add feature collector to the treewrapper
+
+public class ModifiedMCTS extends Behaviour {
 
     int numTrees;
     int numRollouts;
@@ -81,16 +87,12 @@ public class ExperimentalMCTS extends Behaviour {
     public static GameAction lastPlayedAction = null;
     String name = "Experimental MCTS";
     CardReference prevCardReference;
-    public boolean logging = false;
-    public ArrayList<MCTSSample> samples = new ArrayList<MCTSSample>();
-    public void doLog(){
-        logging = true;
-        TreeWrapper.logging = true;
-    }
-    public ExperimentalMCTS(int numRollouts, int numTrees, double exploreFactor, boolean deterministic) {
+    GameCritique critique;
+    public ModifiedMCTS(int numRollouts, int numTrees, double exploreFactor, GameCritique critique ) {
         this.numTrees = numTrees;
         this.numRollouts = numRollouts;
         this.exploreFactor = exploreFactor;
+        this.critique = critique;
     }
 
     @Override
@@ -110,27 +112,29 @@ public class ExperimentalMCTS extends Behaviour {
                 discardedCards.add(card);
             }
         }
+        //make a method, and pass it the cards we got
+        //
         return discardedCards;
     }
-     FeatureCollector f = null;
+    
+    FeatureCollector f = null;
+    
     @Override
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
+        
+        //System.err.println("our critiquer thinks: " + critique.getCritique(context));
         //System.err.println("an action is being requested of me");
-        //System.err.println("here's what the board looks like to me");
+       // System.err.println("here's what the board looks like to me");
         if(f==null){
             f = new FeatureCollector(context,player);
         }
         //f.getFeatures(false, context, player);
         //f.printFeatures(context, player);
-        TreeWrapper myTree = new TreeWrapper(numRollouts, numTrees, exploreFactor, prevCardReference);
-        
+        TreeWrapper myTree = new TreeWrapper(numRollouts, numTrees, exploreFactor, prevCardReference, f,critique);
         GameAction prev = myTree.getAction(context.clone(), player.clone(), validActions);
         if (isCard(prev)) {
             prevCardReference = ((PlayCardAction) prev).getCardReference();
         }
-        if(myTree.sample!=null)
-            samples.add(myTree.sample);
-        //System.err.println("i added + " + myTree.sample + " samples " + " " + TreeWrapper.logging);
         //System.err.println("returned an action " + prev + " " + prev.getTargetKey());
         return prev;
     }
@@ -141,21 +145,23 @@ public class ExperimentalMCTS extends Behaviour {
 }
 
 class TreeWrapper {
-    static boolean logging = false;
+
     public double[][] results;
     int numTrees;
     int numRollouts;
     double exploreFactor;
     CardReference prevCardReference = null;
-    GameContext[] childContexts = null;
-    MCTSSample sample=null;
     private IGameStateHeuristic heuristic = new ThreatBasedHeuristic(FeatureVector.getDefault());
-    ArrayList<MCTSSample> samples = new ArrayList<MCTSSample>();
-    public TreeWrapper(int numRollouts, int numTrees, double exploreFactor, CardReference prevCardReference) {
+    FeatureCollector f;
+    GameCritique critique;
+    
+    public TreeWrapper(int numRollouts, int numTrees, double exploreFactor, CardReference prevCardReference, FeatureCollector f, GameCritique critique) {
         this.numTrees = numTrees;
         this.numRollouts = numRollouts;
         this.exploreFactor = exploreFactor;
         this.prevCardReference = prevCardReference;
+        this.f = f;
+        this.critique = critique;
     }
 
     public GameAction getAction(GameContext context, Player player, List<GameAction> validActions) {
@@ -178,10 +184,8 @@ class TreeWrapper {
         IntStream.range(0, numTrees)
                 .parallel()
                 .forEach((int i) -> getProbabilities(simulation.clone(), validActions, player.clone(), i));
-        //for(int i = 0; i<gameForest.length; i++){
-        //   getProbabilities(gameForest[i],simulation,validActions, player, i);
-        //}
-
+        
+        
         double totalScore[] = new double[validActions.size()];
         for (int a = 0; a < results.length; a++) {
             for (int i = 0; i < results[a].length; i++) {
@@ -189,50 +193,26 @@ class TreeWrapper {
                     totalScore[i] += results[a][i] / numTrees;
             }
         }
-        
-        
         double bestScore = Double.NEGATIVE_INFINITY;
         double secondBestScore = Double.NEGATIVE_INFINITY;
         GameAction bestAction = validActions.get(0);
         GameAction secondBestAction = validActions.get(0);
         for (int i = 0; i < totalScore.length; i++) {
-            GameContext possibleStates[] = this.childContexts;
             if (totalScore[i] > bestScore) {
                 secondBestScore = bestScore;
                 secondBestAction = bestAction;
                 bestAction = validActions.get(i);
                 bestScore = totalScore[i];
-
             } else if (secondBestScore < totalScore[i]) {
                 secondBestAction = validActions.get(i);
                 secondBestScore = totalScore[i];
             }
-            //System.err.println(10E2);
             //System.err.println("action " + validActions.get(i) + " fitness: " + totalScore[i]);
         }
-        if(logging)
-            sample = new MCTSSample(childContexts,totalScore.clone());
-        else
-            System.err.println("logging was off bro!");
-        /*if (bestScore - secondBestScore < .025) {
-            GameContext bestContext = context.clone();
-            bestContext.getLogic().performGameAction(player.getId(), bestAction);
-            double bestH = heuristic.getScore(bestContext, player.getId());
 
-            GameContext secondBestContext = context.clone();
-            secondBestContext.getLogic().performGameAction(player.getId(), secondBestAction);
-            double secondBestH = heuristic.getScore(secondBestContext, player.getId());
-
-            if (bestH >= secondBestH) {
-                winner = bestAction;
-            } else {
-                winner = secondBestAction;
-            }
-        } else {
-            winner = bestAction;
-        }*/
+        
         if (bestAction.getActionType() != ActionType.PHYSICAL_ATTACK) {
-            ExperimentalMCTS.lastPlayedAction = bestAction;
+            ModifiedMCTS.lastPlayedAction = bestAction;
         }
         winner = bestAction;
 
@@ -266,7 +246,7 @@ class TreeWrapper {
 
         RandomizeSimulation(simulation, simulation.getPlayer(player.getId()));
 
-        gameTree = new MCTSTree(numRollouts / numTrees, validActions, simulation, exploreFactor, validActions.get(0).getActionType() == ActionType.BATTLECRY, prevCardReference);
+        gameTree = new MCTSTree(numRollouts / numTrees, validActions, simulation, exploreFactor, validActions.get(0).getActionType() == ActionType.BATTLECRY, prevCardReference,f,critique);
 
         gameTree.getBestAction();
         //f(index==0){
@@ -275,25 +255,15 @@ class TreeWrapper {
         //}
         MCTSTreeNode root = gameTree.root;
 
-        
-        if(index == 0 && logging)
-            childContexts = new GameContext[root.children.size()];
         //accumulate results
         for (int a = 0; a < root.children.size(); a++) {
-            
             MCTSTreeNode child = root.children.get(a);
-            
-            if(index == 0 && logging)
-                childContexts[a] = child.context;
-            
-            if(child.nVisits != Integer.MAX_VALUE){
+            if(child.nVisits != Integer.MAX_VALUE)
                 results[index][a] += child.totValue[player.getId()] / child.nVisits;
-            }
             else{
                 results[index][a] = Integer.MIN_VALUE;
              }
-            
-          
+
         }
         // if(results[index][0]>results[index][1]){
         //      gameTree.saveTreeToDot("/home/dfreelan/gametree" + index + ".txt");

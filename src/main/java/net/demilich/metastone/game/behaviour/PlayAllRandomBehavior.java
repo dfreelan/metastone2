@@ -42,5 +42,10 @@ public class PlayAllRandomBehavior extends Behaviour {
 		
 		return randomAction;
 	}
+        public PlayAllRandomBehavior clone(){
+            PlayAllRandomBehavior a = new PlayAllRandomBehavior();
+            return a;
+            
+        }
 
 }

@@ -34,5 +34,12 @@ public class PlayRandomBehaviour extends Behaviour {
 		GameAction randomAction = validActions.get(randomIndex);
 		return randomAction;
 	}
+        
+        @Override 
+        public Behaviour clone(){
+            
+            
+            return new PlayRandomBehaviour();
+        }
 
 }

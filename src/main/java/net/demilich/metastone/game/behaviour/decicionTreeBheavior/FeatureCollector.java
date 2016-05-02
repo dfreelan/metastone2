@@ -40,10 +40,7 @@ public final class FeatureCollector implements Cloneable {
     TIntIntHashMap enemyCardMap = new TIntIntHashMap(60);
     TIntIntHashMap myCardMap = new TIntIntHashMap(60);
 
-    TIntIntHashMap reverseMyCardMap = new TIntIntHashMap(60);
-    TIntIntHashMap reverseEnemyCardMap = new TIntIntHashMap(60);
     double[] featureData; //feature array, will be resued; 
-    boolean modified = false;
     ArrayList<Integer> cardCount = new ArrayList<Integer>();
     ArrayList<String> cardNames = new ArrayList<String>();
     
@@ -57,6 +54,22 @@ public final class FeatureCollector implements Cloneable {
     int enemyBoardStart;
     public synchronized FeatureCollector clone() {
         FeatureCollector clone = new FeatureCollector();
+        clone.enemyCardMap = this.enemyCardMap;
+        clone.myCardMap = this.myCardMap;
+        clone.cardCount = this.cardCount;
+        clone.cardNames = this.cardNames;
+        clone.enemyCardCount = this.enemyCardCount;
+        clone.enemyCardNames = this.enemyCardNames;
+        
+        clone.lastEnemyCard = this.lastEnemyCard;
+        clone.lastSelfCard = this.lastSelfCard;
+        clone.featureCount = this.featureCount;
+        clone.myBoardStart = this.myBoardStart;
+        clone.enemyBoardStart = this.enemyBoardStart;
+        
+        
+        
+        clone.featureData = this.featureData.clone();
         return clone;
     }
      public FeatureCollector(GameContext context, Player player) {
@@ -67,7 +80,7 @@ public final class FeatureCollector implements Cloneable {
             int hash = card.getName().hashCode();
             if(!myCardMap.containsKey(hash)){
                 myCardMap.put(hash, featureCount);
-                reverseMyCardMap.put(featureCount,hash);
+                
                 this.cardNames.add(card.getName());
                 cardCount.add(1);
                 featureCount+=3;
@@ -79,7 +92,7 @@ public final class FeatureCollector implements Cloneable {
              int hash = card.getName().hashCode();
             if(!myCardMap.containsKey(hash)){
                 myCardMap.put(hash, featureCount);
-                reverseMyCardMap.put(featureCount,hash);
+                
                 this.cardNames.add(card.getName());
                 cardCount.add(1);
                 featureCount+=3;
@@ -97,7 +110,7 @@ public final class FeatureCollector implements Cloneable {
             if(!enemyCardMap.containsKey(hash)){
                 enemyCardMap.put(hash, featureCount);
                 
-                reverseEnemyCardMap.put(featureCount,hash);
+               
                 this.enemyCardNames.add(card.getName());
                 enemyCardCount.add(1);
                 featureCount+=2;
@@ -110,7 +123,7 @@ public final class FeatureCollector implements Cloneable {
               int hash = card.getName().hashCode();
             if(!enemyCardMap.containsKey(hash)){
                 enemyCardMap.put(hash, featureCount);
-                reverseEnemyCardMap.put(featureCount,hash);
+                
                 this.enemyCardNames.add(card.getName());
                 enemyCardCount.add(1);
                 featureCount+=2;
@@ -119,10 +132,10 @@ public final class FeatureCollector implements Cloneable {
             }
         }
         lastEnemyCard = featureCount-2;
-        //feature data will be features count, my health/armor, opponent health/armor, my board(7*3), opponent board (7*3)
+        //feature data will be features count, my health/armor, opponent health/armor, myMana/maxMana, enemyMana/maxMana, my board(7*3), opponent board (7*3)
         
-        featureData = new double[featureCount + 1 + 1  + 1 + 1 + 7*3 + 7*3];
-        this.myBoardStart = featureCount+1+1+1+1;
+        featureData = new double[featureCount + 1 + 1  + 1 + 1 +2 +2 + 7*3 + 7*3];
+        this.myBoardStart = featureCount+1+1+1+1+2+2;
         this.enemyBoardStart = myBoardStart + 7*3; 
         
      }
@@ -130,7 +143,7 @@ public final class FeatureCollector implements Cloneable {
     public double[] getFeatures(boolean includeAction, GameContext context,Player player){
         //hand,deck,played
         featureData = new double[featureData.length];
-        System.err.println("feature count + " + featureCount + " featuredata size" + featureData.length );
+        //System.err.println("feature count + " + featureCount + " featuredata size" + featureData.length );
         populateFeatureData(this.myCardMap,0,player.getHand().getList());
         populateFeatureData(this.myCardMap,1,player.getDeck().getList());
         
@@ -143,12 +156,15 @@ public final class FeatureCollector implements Cloneable {
         
         featureData[featureCount+0] = player.getHero().getArmor()/10.0;
         featureData[featureCount+1] = player.getHero().getHp()/33.0;
+         featureData[featureCount+2] = player.getMana();
+        featureData[featureCount+3] = player.getMaxMana();
         
         Player opponent = context.getOpponent(player);
         
-        featureData[featureCount+2] = opponent.getHero().getArmor()/10.0;
-        featureData[featureCount+3] = opponent.getHero().getHp()/33.0;
-        
+        featureData[featureCount+4] = opponent.getHero().getArmor()/10.0;
+        featureData[featureCount+5] = opponent.getHero().getHp()/33.0;
+        featureData[featureCount+6] = opponent.getMana();
+        featureData[featureCount+7] = opponent.getMaxMana();
         
         addMinions(player.getMinions(), this.myBoardStart);
         addMinions(opponent.getMinions(), this.enemyBoardStart);
@@ -174,21 +190,23 @@ public final class FeatureCollector implements Cloneable {
     public void calculatePlayedCards(){
         for(int i = 0; i<=lastSelfCard; i+=3){
             int cardNum = i/3;
-            int total = this.cardCount.get(cardNum);
-            int cardsPlayed = (int) (total - (featureData[i] + featureData[i+1]));
-            featureData[i+2] = cardsPlayed;
+            double total = this.cardCount.get(cardNum);
+            double cardsPlayed = (double) (total - (featureData[i]*2 + featureData[i+1]*2));
+            featureData[i+2] = cardsPlayed/2.0;
         }
         for(int i = lastSelfCard+3; i<=lastEnemyCard; i+=2){
             int cardNum = (i-(lastSelfCard+3))/2;
-            int total = this.enemyCardCount.get(cardNum);
-            int cardsPlayed = (int) (total - (featureData[i]));
-            featureData[i+1] = cardsPlayed;
+            double total = this.enemyCardCount.get(cardNum);
+            double cardsPlayed = (double)(total - (featureData[i]*2));
+            featureData[i+1] = cardsPlayed/2.0;
         }
     }
     public void populateFeatureData(TIntIntHashMap myMap, int offset, List<Card> cards){
         
         for(Card card : cards){
-            featureData[myMap.get(card.getName().hashCode())+offset] +=1; 
+            int index = myMap.get(card.getName().hashCode());
+            if(index != -1)
+                featureData[index+offset] += (1.0/2.0); 
         }
         
     }
@@ -197,8 +215,8 @@ public final class FeatureCollector implements Cloneable {
    public void printFeatures(GameContext context,Player player){
        double[] features = this.getFeatures(false, context, player);
        System.err.println("my card data:");
-       for(int i = 0; i<this.cardCount.size(); i++){
-           String numbers = this.featureData[i*3] + " " + this.featureData[i*3+1] + " " + this.featureData[i*3+2];
+       for(int i = 0; i<this.cardCount.size(); i++){ 
+          String numbers = this.featureData[i*3] + " " + this.featureData[i*3+1] + " " + this.featureData[i*3+2];
            System.err.println(this.cardNames.get(i) + ": " + numbers);
        }
        

@@ -63,8 +63,12 @@ public class HearthPwnImporter implements IDeckImporter {
 				HttpEntity entity = response.getEntity();
 				String htmlContent = EntityUtils.toString(entity);
 				EntityUtils.consume(entity);
+                                System.err.println("html content was " + htmlContent);
 				return parse(htmlContent);
-			} finally {
+			} catch(Exception e){
+                            e.printStackTrace();
+                        }
+                        finally {
 				response.close();
 			}
 
