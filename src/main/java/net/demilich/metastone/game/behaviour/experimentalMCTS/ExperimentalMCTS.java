@@ -128,8 +128,14 @@ public class ExperimentalMCTS extends Behaviour {
         if (isCard(prev)) {
             prevCardReference = ((PlayCardAction) prev).getCardReference();
         }
-        if(myTree.sample!=null)
-            samples.add(myTree.sample);
+        //if(logging && myTree.rootScores!=null){
+        //    double sum = 0; 
+        //    for(int i = 0; i<myTree.rootScores.length; i++){
+        //        sum+=myTree.rootScores[i]/(double)myTree.rootScores.length;
+        //    }
+        if(myTree.bestActionScore!=-100)
+            samples.add(new MCTSSample(context.clone(),myTree.bestActionScore));
+        //}
         //System.err.println("i added + " + myTree.sample + " samples " + " " + TreeWrapper.logging);
         //System.err.println("returned an action " + prev + " " + prev.getTargetKey());
         return prev;
@@ -149,8 +155,11 @@ class TreeWrapper {
     CardReference prevCardReference = null;
     GameContext[] childContexts = null;
     MCTSSample sample=null;
+    double totalScore = 0.0;
+    double[] rootScores = null;
     private IGameStateHeuristic heuristic = new ThreatBasedHeuristic(FeatureVector.getDefault());
     ArrayList<MCTSSample> samples = new ArrayList<MCTSSample>();
+    double bestActionScore = -100;
     public TreeWrapper(int numRollouts, int numTrees, double exploreFactor, CardReference prevCardReference) {
         this.numTrees = numTrees;
         this.numRollouts = numRollouts;
@@ -175,6 +184,9 @@ class TreeWrapper {
         GameAction winner = null;
 
         results = new double[numTrees][validActions.size()];
+        this.rootScores = new double[numTrees];
+        //System.err.println("root scores length is " + rootScores.length);
+        
         IntStream.range(0, numTrees)
                 .parallel()
                 .forEach((int i) -> getProbabilities(simulation.clone(), validActions, player.clone(), i));
@@ -185,8 +197,10 @@ class TreeWrapper {
         double totalScore[] = new double[validActions.size()];
         for (int a = 0; a < results.length; a++) {
             for (int i = 0; i < results[a].length; i++) {
-                if(results[a][i]!=Integer.MIN_VALUE)
+                if(results[a][i]!=Integer.MIN_VALUE){
                     totalScore[i] += results[a][i] / numTrees;
+                    
+                }
             }
         }
         
@@ -210,10 +224,8 @@ class TreeWrapper {
             //System.err.println(10E2);
             //System.err.println("action " + validActions.get(i) + " fitness: " + totalScore[i]);
         }
-        if(logging)
-            sample = new MCTSSample(childContexts,totalScore.clone());
-        else
-            System.err.println("logging was off bro!");
+      
+        this.bestActionScore = bestScore;
         /*if (bestScore - secondBestScore < .025) {
             GameContext bestContext = context.clone();
             bestContext.getLogic().performGameAction(player.getId(), bestAction);
@@ -288,6 +300,7 @@ class TreeWrapper {
             
             if(child.nVisits != Integer.MAX_VALUE){
                 results[index][a] += child.totValue[player.getId()] / child.nVisits;
+                rootScores[index] += child.totValue[player.getId()] / root.nVisits;
             }
             else{
                 results[index][a] = Integer.MIN_VALUE;

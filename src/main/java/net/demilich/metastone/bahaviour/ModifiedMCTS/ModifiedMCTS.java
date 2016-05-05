@@ -182,7 +182,7 @@ class TreeWrapper {
 
         results = new double[numTrees][validActions.size()];
         IntStream.range(0, numTrees)
-                .parallel()
+                .sequential()
                 .forEach((int i) -> getProbabilities(simulation.clone(), validActions, player.clone(), i));
         
         

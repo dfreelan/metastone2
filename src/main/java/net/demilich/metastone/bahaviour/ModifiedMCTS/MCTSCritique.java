@@ -18,10 +18,18 @@ import org.encog.engine.network.activation.ActivationElliottSymmetric;
 import org.encog.engine.network.activation.ActivationTANH;
 import org.encog.mathutil.error.ErrorCalculation;
 import org.encog.mathutil.error.ErrorCalculationMode;
+import org.encog.ml.CalculateScore;
+import org.encog.ml.data.MLDataSet;
+import org.encog.ml.train.MLTrain;
+import org.encog.ml.train.strategy.Greedy;
+import org.encog.ml.train.strategy.HybridStrategy;
+import org.encog.ml.train.strategy.StopTrainingStrategy;
 import org.encog.neural.data.NeuralDataSet;
 import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
+import org.encog.neural.networks.training.TrainingSetScore;
+import org.encog.neural.networks.training.anneal.NeuralSimulatedAnnealing;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 
 /**
@@ -30,7 +38,7 @@ import org.encog.neural.networks.training.propagation.back.Backpropagation;
  */
 public class MCTSCritique implements GameCritique {
 
-    int samples = 200;
+    int samples = 2000;
     BasicNetwork network;
     int playerID;
     FeatureCollector f;
@@ -58,9 +66,9 @@ public class MCTSCritique implements GameCritique {
             System.err.println("on sample " + i);
             GameContext simulation = startingTurn.clone();
             this.RandomizeSimulation(simulation, p);
-            ExperimentalMCTS mctsP1 = new ExperimentalMCTS(400, 4, .8, false);
+            ExperimentalMCTS mctsP1 = new ExperimentalMCTS(100, 4, 1.4, false);
             mctsP1.doLog();
-            ExperimentalMCTS mctsP2 = new ExperimentalMCTS(400, 4, .8, false);
+            ExperimentalMCTS mctsP2 = new ExperimentalMCTS(100, 4, 1.4, false);
             mctsP2.doLog();
             simulation.getPlayer1().setBehaviour(mctsP1);
             simulation.getPlayer2().setBehaviour(mctsP2);
@@ -68,42 +76,81 @@ public class MCTSCritique implements GameCritique {
             simulation.play();
 
             int result = simulation.getWinningPlayerId();
-            for(int q = 0; q<5; q++){
-                MCTSSample sample = mctsP2.samples.get(generator.nextInt(mctsP2.samples.size()));
+            for(int q = 0; q<mctsP2.samples.size(); q++){
+                MCTSSample sample = mctsP2.samples.get(q);
                 System.err.println("there are " + mctsP2.samples.size() + " samples to choose from");
-                GameContext[] randomContexts = sample.reachableStates;
-                double[] distribution = sample.winRates.clone();
+                GameContext randomContext = sample.reachableState;
+                double distribution = sample.winRate;
                 
                 if (i < samples -samples/10) {
-                    for (int w = 0; w < distribution.length; w++) {
-                        System.err.println("example of a label: "+  distribution[w]);
-                        if(Double.isNaN(distribution[w])){
-                            distribution[w] = 0;
+                    
+                        System.err.println("example of a label: "+  distribution);
+                        if(Double.isNaN(distribution)){
+                            distribution = 0;
                         }else{
-                            distribution[w] = distribution[w]*2-1;
+                            distribution = distribution*2-1;
                         }
                         
                         ArrayList<Double> temp = new ArrayList<Double>();
-                        double[] info = f.getFeatures(true,randomContexts[w] , randomContexts[w].getPlayer2());
+                        double[] info = f.getFeatures(true,randomContext , randomContext.getPlayer2());
                         //f.printFeatures(randomContexts[w], randomContexts[w].getPlayer2());
                         double sum = 0;
                         for(int d = 0; d<info.length; d++){
                             sum+= info[d]*(d+1)*2;
                         }
                         System.err.println("feature vector is all like " + sum + " " + info.length);
-                        gameFeatures.add(f.getFeatures(true, randomContexts[w], randomContexts[w].getPlayer2()));
-                        gameLabels.add(distribution[w]);
-                    }
+                        gameFeatures.add(f.getFeatures(true, randomContext, randomContext.getPlayer2()));
+                        gameLabels.add((Double)(double)distribution);
+                    
                 } else {
-                    for (int w = 0; w < distribution.length; w++) {
-                        if(Double.isNaN(distribution[w])){
-                            distribution[w] = 0;
+                    
+                        if(Double.isNaN(distribution)){
+                            distribution = 0;
                         }else{
-                            distribution[w] = distribution[w]*2-1;
+                            distribution = distribution*2-1;
                         }
-                        gameFeaturesTesting.add(f.getFeatures(true, randomContexts[w], p));
-                        gameLabelsTesting.add(distribution[w]);
-                    }
+                        gameFeaturesTesting.add(f.getFeatures(true, randomContext, randomContext.getPlayer2()));
+                        gameLabelsTesting.add((Double)(double)distribution);
+                    
+                }
+            }
+            
+            for(int q = 0; q<mctsP1.samples.size(); q++){
+                MCTSSample sample = mctsP1.samples.get(q);
+                System.err.println("(1)there are " + mctsP1.samples.size() + " samples to choose from");
+                GameContext randomContext = sample.reachableState;
+                double distribution = sample.winRate;
+                
+                if (i < samples -samples/10) {
+                    
+                        System.err.println("example of a label: "+  distribution);
+                        if(Double.isNaN(distribution)){
+                            distribution = 0;
+                        }else{
+                            distribution = distribution*2-1;
+                        }
+                        
+                        ArrayList<Double> temp = new ArrayList<Double>();
+                        double[] info = f.getFeatures(true,randomContext , randomContext.getPlayer1());
+                        //f.printFeatures(randomContexts[w], randomContexts[w].getPlayer1());
+                        double sum = 0;
+                        for(int d = 0; d<info.length; d++){
+                            sum+= info[d]*(d+1)*2;
+                        }
+                        System.err.println("feature vector is all like " + sum + " " + info.length);
+                        gameFeatures.add(f.getFeatures(true, randomContext, randomContext.getPlayer1()));
+                        gameLabels.add((Double)(double)distribution);
+                    
+                } else {
+                    
+                        if(Double.isNaN(distribution)){
+                            distribution = 0;
+                        }else{
+                            distribution = distribution*2-1;
+                        }
+                        gameFeaturesTesting.add(f.getFeatures(true, randomContext, randomContext.getPlayer1()));
+                        gameLabelsTesting.add((Double)(double)distribution);
+                    
                 }
             }
 
@@ -111,9 +158,9 @@ public class MCTSCritique implements GameCritique {
 
         network = new BasicNetwork();
         network.addLayer(new BasicLayer(null, true, gameFeatures.get(0).length));
-
-        network.addLayer(new BasicLayer(new ActivationElliottSymmetric(), true, 70));
-        network.addLayer(new BasicLayer(new ActivationElliottSymmetric(), true, 70));
+//182	182	182	46	27
+        network.addLayer(new BasicLayer(new ActivationElliottSymmetric(), true, 70,.5));
+        network.addLayer(new BasicLayer(new ActivationElliottSymmetric(), true, 70,.5));
 
         network.addLayer(new BasicLayer(new ActivationElliottSymmetric(), true, 1));
         network.getStructure().finalizeStructure();
@@ -142,17 +189,44 @@ public class MCTSCritique implements GameCritique {
             testingLabels[i] = arr1;
         }
         NeuralDataSet testingSet = new BasicNeuralDataSet(testingFeatures, testingLabels);
-
+        
         ErrorCalculation.setMode(ErrorCalculationMode.MSE);
-        train.iteration(150);
-        train.finishTraining();
+        //train.iteration(300);
+        //train.finishTraining();
+        trainNetwork("wat", network, trainingSet, testingSet);
         // if(false) break;
         System.err.println(network.calculateError(trainingSet) + " (training) square error is");
         System.err.println(network.calculateError(testingSet) + " (testing) square error is");
 
         return this;
     }
+    public static double trainNetwork(final String what,
+			final BasicNetwork network, final MLDataSet trainingSet, final MLDataSet testingSet) {
+		// train the neural network
+		CalculateScore score = new TrainingSetScore(trainingSet);
+		final MLTrain trainAlt = new NeuralSimulatedAnnealing(
+				network, score, 10, 2, 100);
+                
+                
+		final MLTrain trainMain = new Backpropagation(network, trainingSet,.0000001,0.0);
 
+		final StopTrainingStrategy stop = new StopTrainingStrategy();
+		trainMain.addStrategy(new Greedy());
+		//trainMain.addStrategy(new HybridStrategy(trainAlt));
+		trainMain.addStrategy(stop);
+
+		int epoch = 0;
+		while (!stop.shouldStop() && epoch<100000) {
+			trainMain.iteration();
+			System.out.println("Training " + what + ", Epoch #" + epoch
+					+ " Error:" + trainMain.getError() );
+                        System.err.println(network.calculateError(testingSet) + " (testing) square error is");
+                        
+			epoch++;
+		}
+                trainMain.finishTraining();
+		return trainMain.getError();
+	}
     //probability 0-1 of winning from the player erspective
     @Override
     public double getCritique(GameContext context, Player p) {

@@ -219,7 +219,7 @@ public class MCTSTreeNode {
                 
         simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);
         
-        double neuralValue = critique.getCritique(simulation, p);
+        double neuralValue = critique.getCritique(simulation, simulation.getPlayer(p.getId()));
         if(p.getId() == 0){
             neuralValue = 1-neuralValue;
         }
@@ -241,7 +241,7 @@ public class MCTSTreeNode {
         //simulation.getLogic().rolloutActive = true;
         performBattlecryAction(simulation,battlecry);
         
-        double neuralValue = critique.getCritique(simulation,p);
+        double neuralValue = critique.getCritique(simulation,simulation.getPlayer(p.getId()));
         if(p.getId() == 0){
             neuralValue = 1-neuralValue;
         }

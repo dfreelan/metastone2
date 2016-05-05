@@ -12,10 +12,10 @@ import net.demilich.metastone.game.GameContext;
  * @author dfreelan
  */
 public class MCTSSample{
-    public GameContext[] reachableStates;
-    public double[] winRates;
-    public MCTSSample(GameContext g[], double[] w){
-        this.reachableStates  =g;
-        this.winRates = w;
+    public GameContext reachableState;
+    public double winRate;
+    public MCTSSample(GameContext g, double w){
+        this.reachableState  = g;
+        this.winRate = w;
     }
 }
