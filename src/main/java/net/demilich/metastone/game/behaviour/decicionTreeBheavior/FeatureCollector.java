@@ -73,8 +73,17 @@ public final class FeatureCollector implements Cloneable {
         return clone;
     }
      public FeatureCollector(GameContext context, Player player) {
+        context = context.clone();
         
-
+        player = context.getPlayer(player.getId());
+        Player opponent = context.getOpponent(player);
+        
+        
+        opponent.getDeck().addAll(opponent.getHand());
+        player.getDeck().addAll(player.getHand());
+        
+        opponent.getDeck().sortByName();
+        player.getDeck().sortByName();
         //self is hand,deck,played
         for (Card card : player.getHand()) {
             int hash = card.getName().hashCode();
@@ -103,7 +112,7 @@ public final class FeatureCollector implements Cloneable {
         
         lastSelfCard = featureCount-3;
         
-        Player opponent = context.getOpponent(player);
+        opponent = context.getOpponent(player);
         //data is deck,played
         for (Card card : opponent.getHand()) {
              int hash = card.getName().hashCode();
@@ -193,6 +202,14 @@ public final class FeatureCollector implements Cloneable {
             double total = this.cardCount.get(cardNum);
             double cardsPlayed = (double) (total - (featureData[i]*2 + featureData[i+1]*2));
             featureData[i+2] = cardsPlayed/2.0;
+            if(cardsPlayed<0){
+              /*  System.err.println("bad thing " + this.cardNames.get(cardNum));
+                
+                System.err.println("cards played: " + cardsPlayed);
+                System.err.println("feature i, i+1" + featureData[i] + " " + featureData[i+1]);
+                System.err.println("total in my deck is " + total);
+                System.exit(0);*/
+            }
         }
         for(int i = lastSelfCard+3; i<=lastEnemyCard; i+=2){
             int cardNum = (i-(lastSelfCard+3))/2;

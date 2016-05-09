@@ -278,8 +278,7 @@ public class MCTSTreeNode {
     public void updateStats(double value) {
         nVisits++;
         if (value != -1.0) {
-            
-            totValue[(int) value] += 1.0 - this.getCost(action);
+            totValue[(int) value] += 1.0;
         }
     }
 

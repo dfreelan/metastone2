@@ -5,7 +5,10 @@
  */
 package net.demilich.metastone.game.behaviour.experimentalMCTS;
 
+import java.util.ArrayList;
+import java.util.List;
 import net.demilich.metastone.game.GameContext;
+import net.demilich.metastone.game.actions.GameAction;
 
 /**
  *
@@ -14,8 +17,13 @@ import net.demilich.metastone.game.GameContext;
 public class MCTSSample{
     public GameContext reachableState;
     public double winRate;
-    public MCTSSample(GameContext g, double w){
+    public List<GameAction> gameActions = new ArrayList<GameAction>();
+    public double testValue;
+    public MCTSSample(GameContext g, double w, List<GameAction> gameActions, double testValue){
         this.reachableState  = g;
         this.winRate = w;
+        this.gameActions = gameActions;
+        this.testValue = testValue;
+        
     }
 }
