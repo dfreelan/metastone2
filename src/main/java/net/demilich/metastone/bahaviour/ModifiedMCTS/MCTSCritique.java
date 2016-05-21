@@ -19,6 +19,8 @@ import org.iq80.leveldb.*;
 import static org.iq80.leveldb.impl.Iq80DBFactory.*;
 import java.io.*;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.stream.IntStream;
 
 import net.demilich.metastone.game.GameContext;
 import net.demilich.metastone.game.Player;
@@ -28,6 +30,12 @@ import net.demilich.metastone.game.behaviour.decicionTreeBheavior.FeatureCollect
 import net.demilich.metastone.game.behaviour.experimentalMCTS.ExperimentalMCTS;
 import net.demilich.metastone.game.behaviour.experimentalMCTS.MCTSSample;
 import net.demilich.metastone.game.cards.Card;
+import org.apache.commons.io.FileUtils;
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.caffe;
+import org.bytedeco.javacpp.caffe.Caffe;
+import org.bytedeco.javacpp.caffe.FloatBlob;
+import org.bytedeco.javacpp.caffe.FloatNet;
 import org.encog.engine.network.activation.ActivationElliottSymmetric;
 import org.encog.engine.network.activation.ActivationTANH;
 import org.encog.mathutil.error.ErrorCalculation;
@@ -46,6 +54,7 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.encog.neural.networks.training.anneal.NeuralSimulatedAnnealing;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
+import static org.bytedeco.javacpp.caffe.*;
 
 /**
  *
@@ -53,402 +62,451 @@ import org.encog.neural.networks.training.propagation.resilient.ResilientPropaga
  */
 public class MCTSCritique implements GameCritique {
 
-    int samples = 10;
-    int rollouts = 100;
-    int trees = 4;
-    double exploreRate= .8;
-    
+    int samples = 11;
+    int rollouts = 400;
+    int trees = 1;
+    double exploreRate = 1.4;
+
     BasicNetwork network;
     int playerID;
     FeatureCollector f;
+    static FloatNet caffe_net = null;
+
+    String modelFile = null;
+
+    static {
+        java.util.logging.Logger.getLogger(caffe.class.getSimpleName()).setLevel(Level.OFF);;
+        System.err.println("changing to ");
+        System.err.println("AAAAAAAAAAAAAAAAAAAAAAAH\n\n\n\n\n");
+
+        System.err.println("rollout fix changing to .1 neural and .9 playthroughfoeced clone. 10000 samples. 4 rollou555ts executing updated");
+        System.err.println("correcte\n\\nd");
+        System.err.println("updated");
+    }
+
+    public MCTSCritique(String modelFile) {
+        //System.err.println("someething new requested of me");
+        //caffe_net.
+
+        if (caffe_net != null) {
+            return;
+        }
+
+        this.modelFile = modelFile;
+        modelFile = null;
+        modelFile = "/home/dfreelan/dev/networks/hybrid.caffemodel";
+        String paramFile = "/home/dfreelan/dev/networks/singleLayerExample.prototxt";
+        //Caffe.set_mode(Caffe.CPU);
+
+        try {
+            //String str = FileUtils.readFileToString(new File(paramFile), "utf-8");
+            ///System.err.println(str);
+            if (modelFile != null) {
+                Thread.sleep(new Random().nextInt(10000+1000));
+                caffe_net = new FloatNet(paramFile, TEST);
+                caffe_net.CopyTrainedLayersFrom(modelFile);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(0);
+        }
+        java.util.logging.Logger.getLogger(caffe.class.getSimpleName()).setLevel(Level.OFF);;
+    }
+    ExperimentalMCTS[] behaviours;
 
     @Override
-    public GameCritique trainBasedOnActor(Behaviour a, GameContext startingTurn, Player p) {
-        
+    public synchronized GameCritique trainBasedOnActor(Behaviour a, GameContext startingTurn, Player p) {
+        f = new FeatureCollector(startingTurn, p);
+        if (caffe_net != null) {
+            return this;
+        }
         Random generator = new Random();
-        System.err.println("ellodes");
+
         f = new FeatureCollector(startingTurn, p);
         f.printFeatures(startingTurn, p);
-        System.err.println("num features in Neural is : " + f.getFeatures(true, startingTurn, p).length);
+
         playerID = p.getId();
         startingTurn = startingTurn.clone();
-
-        //startingTurn.init();
         startingTurn.getPlayer1().setBehaviour(a.clone());
         startingTurn.getPlayer2().setBehaviour(a.clone());
 
-        ArrayList<double[]> gameFeatures = new ArrayList<double[]>();
-        ArrayList<Double> gameLabels = new ArrayList<Double>();
+        ArrayList<double[]> gameFeatures = new ArrayList<>();
+        ArrayList<Double> gameLabels = new ArrayList<>();
+        ArrayList<Double> gameWeights = new ArrayList<>();
 
-        ArrayList<double[]> gameFeaturesTesting = new ArrayList<double[]>();
-        ArrayList<Double> gameLabelsTesting = new ArrayList<Double>();
-        ArrayList<GameContext> testingSetContexts = new ArrayList<GameContext>();
-        ArrayList<Double> testingSetReTests = new ArrayList<Double>();
+        ArrayList<double[]> gameFeaturesTesting = new ArrayList<>();
+        ArrayList<Double> gameLabelsTesting = new ArrayList<>();
+        ArrayList<Double> gameWeightsTesting = new ArrayList<>();
+
+        ArrayList<GameContext> testingSetContexts = new ArrayList<>();
+        ArrayList<Double> testingSetReTests = new ArrayList<>();
+
+        // 
+        //System.err.println("on sample " + i);
+        //GameContext simulation = startingTurn.clone();
+        final GameContext simulation = startingTurn.clone();
+
+        behaviours = new ExperimentalMCTS[samples * 2];
+        IntStream.range(0, samples)
+                .parallel()
+                .forEach((int i) -> {
+                    doPlay(RandomizeSimulation(simulation.clone()), i, f.clone());
+                });
+        System.err.println("game playing is done!");
+        //System.exit(0);
         for (int i = 0; i < samples; i++) {
             boolean testing = !(i < samples - samples / 10);
-            System.err.println("on sample " + i);
-            GameContext simulation = startingTurn.clone();
-            this.RandomizeSimulation(simulation, p);
-            ExperimentalMCTS mctsP1 = new ExperimentalMCTS(rollouts, trees, exploreRate, false);
-            mctsP1.doLog();
-            ExperimentalMCTS mctsP2 = new ExperimentalMCTS(rollouts, trees, exploreRate, false);
-            mctsP2.doLog();
-            
-            simulation.getPlayer1().setBehaviour(mctsP1);
-            simulation.getPlayer2().setBehaviour(mctsP2);
-
-            simulation.play();
-
-            int result = simulation.getWinningPlayerId();
-            for (int q = 0; q < mctsP2.samples.size(); q++) {
-                MCTSSample sample = mctsP2.samples.get(q);
-                System.err.println("there are " + mctsP2.samples.size() + " samples to choose from");
-                GameContext randomContext = sample.reachableState;
-                double distribution = sample.winRate;
-
-                if (!testing) {
-
-                    System.err.println("example of a label: " + distribution);
-                    if (Double.isNaN(distribution)) {
-                        distribution = 0;
-                    } else {
-                        distribution = distribution * 2 - 1;
-                    }
-
-                    ArrayList<Double> temp = new ArrayList<Double>();
-                    double[] info = f.getFeatures(true, randomContext, randomContext.getPlayer2());
-                    //f.printFeatures(randomContexts[w], randomContexts[w].getPlayer2());
-                    double sum = 0;
-                    for (int d = 0; d < info.length; d++) {
-                        sum += info[d] * (d + 1) * 2;
-                    }
-                    System.err.println("feature vector is all like " + sum + " " + info.length);
-                    gameFeatures.add(f.getFeatures(true, randomContext, randomContext.getPlayer2()));
-                    gameLabels.add((Double) (double) distribution);
-
-                } else {
-
-                    if (Double.isNaN(distribution)) {
-                        distribution = 0;
-                    } else {
-                        distribution = distribution * 2 - 1;
-                    }
-                    gameFeaturesTesting.add(f.getFeatures(true, randomContext, randomContext.getPlayer2()));
-                    gameLabelsTesting.add((Double) (double) distribution);
-                    testingSetReTests.add((Double)sample.testValue*2-1);
-
-                }
+            if (!testing) {
+                gatherSamplesFrom(behaviours[i * 2], gameFeatures, gameLabels, gameWeights, null, 1);
+                gatherSamplesFrom(behaviours[i * 2 + 1], gameFeatures, gameLabels, gameWeights, null, 0);
+            } else {
+                gatherSamplesFrom(behaviours[i * 2], gameFeaturesTesting, gameLabelsTesting, gameWeightsTesting, testingSetReTests, 1);
+                gatherSamplesFrom(behaviours[i * 2 + 1], gameFeaturesTesting, gameLabelsTesting, gameWeightsTesting, testingSetReTests, 0);
             }
-
-            for (int q = 0; q < mctsP1.samples.size(); q++) {
-                MCTSSample sample = mctsP1.samples.get(q);
-                System.err.println("(1)there are " + mctsP1.samples.size() + " samples to choose from");
-                GameContext randomContext = sample.reachableState;
-                double distribution = sample.winRate;
-
-                if (i < samples - samples / 10) {
-
-                    System.err.println("example of a label: " + distribution);
-                    if (Double.isNaN(distribution)) {
-                        distribution = 0;
-                    } else {
-                        distribution = distribution * 2 - 1;
-                    }
-
-                    ArrayList<Double> temp = new ArrayList<Double>();
-                    double[] info = f.getFeatures(true, randomContext, randomContext.getPlayer1());
-                    //f.printFeatures(randomContexts[w], randomContexts[w].getPlayer1());
-                    double sum = 0;
-                    for (int d = 0; d < info.length; d++) {
-                        sum += info[d] * (d + 1) * 2;
-                    }
-                    System.err.println("feature vector is all like " + sum + " " + info.length);
-                    gameFeatures.add(f.getFeatures(true, randomContext, randomContext.getPlayer1()));
-                    gameLabels.add((Double) (double) distribution);
-
-                } else {
-
-                    if (Double.isNaN(distribution)) {
-                        distribution = 0.00001;
-                    } else {
-                        distribution = distribution * 2 - 1;
-                    }
-                    gameFeaturesTesting.add(f.getFeatures(true, randomContext, randomContext.getPlayer1()));
-                    gameLabelsTesting.add((Double) (double) distribution);
-                    testingSetReTests.add(sample.testValue*2-1);
-
-                }
-            }
-
         }
-
-        network = new BasicNetwork();
-        network.addLayer(new BasicLayer(null, true, gameFeatures.get(0).length));
-//182	182	182	46	27
-        network.addLayer(new BasicLayer(new ActivationElliottSymmetric(), true, 40, .5));
-        network.addLayer(new BasicLayer(new ActivationElliottSymmetric(), true, 40, .5));
-        network.addLayer(new BasicLayer(new ActivationElliottSymmetric(), true, 1));
-        network.getStructure().finalizeStructure();
-        network.reset();
-
+        System.err.println("total weight: " + getSum(gameWeights));
+        System.err.println("total ones: " + getNumOnes(gameWeights));
         double[][] trainingFeatures = new double[gameFeatures.size()][gameFeatures.get(0).length];
         double[][] trainingLabels = new double[gameLabels.size()][1];
+        double[][] trainingWeights = new double[gameLabels.size()][1];
         for (int i = 0; i < trainingFeatures.length; i++) {
             trainingFeatures[i] = gameFeatures.get(i);
             double[] arr1 = new double[1];
             arr1[0] = gameLabels.get(i);
             trainingLabels[i] = arr1;
+            arr1 = new double[1];
+            arr1[0] = gameWeights.get(i);
+            trainingWeights[i] = arr1;
         }
-        
-        sendCaffeData(trainingFeatures, trainingLabels, "HearthstoneTraining.h5", true,20,(int)(gameFeatures.size()*1.6));
-        NeuralDataSet trainingSet = new BasicNeuralDataSet(trainingFeatures, trainingLabels);
-        network.setProperty(null, null);
-        Backpropagation train = new Backpropagation(network, trainingSet);
+        sendCaffeData(trainingFeatures, trainingLabels, trainingWeights, "HearthstoneTrainingALLSTUFF.h5", false, false);//(int) (gameFeatures.size() * 1.6),true);
 
         // train.iteration(1000);
         double[][] testingFeatures = new double[gameFeaturesTesting.size()][gameFeaturesTesting.get(0).length];
         double[][] testingLabels = new double[gameLabelsTesting.size()][1];
+        double[][] testingWeights = new double[gameLabelsTesting.size()][1];
         for (int i = 0; i < testingFeatures.length; i++) {
             testingFeatures[i] = gameFeaturesTesting.get(i);
             double[] arr1 = new double[1];
             arr1[0] = gameLabelsTesting.get(i);
             testingLabels[i] = arr1;
+            arr1 = new double[1];
+            arr1[0] = gameWeightsTesting.get(i);
+            testingWeights[i] = arr1;
+
         }
-        sendCaffeData(testingFeatures, testingLabels,"HearthstoneTesting.h5", true);
-        NeuralDataSet testingSet = new BasicNeuralDataSet(testingFeatures, testingLabels);
+        sendCaffeData(testingFeatures, testingLabels, testingWeights, "HearthstoneTestingALLSTUFF.h5", true, false);
+
         System.err.println("testing err if just 0's" + this.getErrorIfZero(testingLabels));
-        System.err.println("ideal testing err: " + this.getIdealTestingError(testingLabels, testingSetContexts,testingSetReTests));
-        ErrorCalculation.setMode(ErrorCalculationMode.MSE);
-        //train.iteration(300);
-        //train.finishTraining();
-        trainNetwork("wat", network, trainingSet, testingSet);
-        // if(false) break;
-        System.err.println(network.calculateError(trainingSet) + " (training) square error is");
-        System.err.println(network.calculateError(testingSet) + " (testing) square error is");
+        System.err.println("ideal testing err: " + this.getIdealTestingError(testingLabels, testingSetContexts, testingSetReTests));
+
         return this;
     }
 
-    public static double trainNetwork(final String what,
-            final BasicNetwork network, final MLDataSet trainingSet, final MLDataSet testingSet) {
-        // train the neural network
-        CalculateScore score = new TrainingSetScore(trainingSet);
-        final MLTrain trainAlt = new NeuralSimulatedAnnealing(
-                network, score, 10, 2, 100);
+    public void doPlay(GameContext simulation, int index, FeatureCollector f) {
 
-        final MLTrain trainMain = new Backpropagation(network, trainingSet,.000001,0.0);
+        System.err.println("on sample " + index);
+        ExperimentalMCTS mctsP1 = new ExperimentalMCTS(rollouts, trees, exploreRate, false,false);
+        mctsP1.doLog(f);
+        ExperimentalMCTS mctsP2 = new ExperimentalMCTS(rollouts, trees, exploreRate, false,false);
+        mctsP2.doLog(f);
+        simulation = playSimulation(simulation, mctsP1, mctsP2);
+        behaviours[index * 2] = mctsP1;
+        behaviours[index * 2 + 1] = mctsP2;
+    }
 
-        final StopTrainingStrategy stop = new StopTrainingStrategy();
-       // trainMain.addStrategy(new Greedy());
-        //trainMain.addStrategy(new HybridStrategy(trainAlt));
-        trainMain.addStrategy(stop);
+    public void gatherSamplesFrom(ExperimentalMCTS mctsP2, ArrayList<double[]> gameFeatures, ArrayList<Double> gameLabels, ArrayList<Double> gameWeights, ArrayList<Double> retestValues, int playerID) {
 
-        int epoch = 0;
-        while (!stop.shouldStop() && epoch < 100000) {
-            trainMain.iteration();
-            System.out.println("Training " + what + ", Epoch #" + epoch
-                    + " Error:" + trainMain.getError());
-            System.err.println(network.calculateError(testingSet) + " (testing) square error is");
+        for (int q = 0; q < mctsP2.samples.size(); q++) {
+            MCTSSample sampleSeed = mctsP2.samples.get(q);
+            MCTSSample allSamples[] = sampleSeed.expandSample();
+            //System.err.println("there are " + mctsP2.samples.size() + " samples to choose from");
+            for (MCTSSample sample : allSamples) {
 
-            epoch++;
+                GameContext randomContext = sample.reachableState;
+                double distribution = sample.winRate;
+
+                //System.err.println("example of a label: " + distribution);
+                if (Double.isNaN(distribution)) {
+                    distribution = 0;
+                } else {
+                    distribution = distribution * 2 - 1;
+                }
+
+                ArrayList<Double> temp = new ArrayList<Double>();
+                double[] info = sample.getFeatures();//f.getFeatures(true, randomContext, randomContext.getPlayer(playerID));
+                //f.printFeatures(randomContexts[w], randomContexts[w].getPlayer2());
+                double sum = 0;
+                for (int d = 0; d < info.length; d++) {
+                    sum += info[d] * (d + 1) * 2;
+                }
+                // System.err.println("feature vector is all like " + sum + " " + info.length);
+                gameFeatures.add(info);
+                gameLabels.add((Double) (double) distribution);
+                gameWeights.add(sample.weight);
+                if (retestValues != null) {
+                    retestValues.add(sample.testValue);
+                }
+            }
         }
-        trainMain.finishTraining();
-        return trainMain.getError();
     }
 
     //probability 0-1 of winning from the player erspective
     @Override
-    public double getCritique(GameContext context, Player p) {
-
-        double[] output = new double[1];
+    public synchronized double getCritique(GameContext context, Player p) {
+        java.util.logging.Logger.getLogger(caffe.class.getSimpleName()).setLevel(Level.OFF);;
+        context = context.clone();
+        p = context.getPlayer(p.getId());
+        Caffe.set_mode(Caffe.CPU);
         //System.err.println("network is " + network + " " + context + " " + f);
-        network.compute(f.getFeatures(true, context, p), output);
+        double input[] = f.getFeatures(true, context, p);
+        if (input.length != 169) {
+            System.err.println("heyyyoo");
+            System.exit(0);
+        }
+        //System.err.println("input length is " + input.length);
+        int hash = 0;
+        for (int i = 0; i < input.length; i++) {
+            hash += (i + 1) * (input[i] + i);
+        }
+        //System.err.println("hash is " + hash);
+        String paramFile = "/home/dfreelan/dev/networks/singleLayerExample.prototxt";
+        // System.err.println("HPASE IS: " + caffe_net.phase());
+        java.util.logging.Logger.getGlobal().setLevel(Level.OFF);
+        //caffe_net.ClearParamDiffs();
 
-        return (output[0] + 1.0) / 2.0;
+        FloatBlob dataBlob = caffe_net.blob_by_name("data");
+
+        //dataBlob.Reshape(169, 1, 1, 1);
+        dataBlob.set_cpu_data(toFloats(input));
+
+        dataBlob.Update();
+        dataBlob.Update();
+
+        // System.err.println("bott blob length? "  + bottom.size());
+        //FloatBlobVector top = caffe_net.ForwardPrefilled();
+        caffe_net.ForwardFrom(1);
+        float out = caffe_net.blob_by_name("tanhFinal").cpu_data().get();
+
+        dataBlob.set_cpu_data(new float[169]);
+
+        dataBlob.Update();
+        dataBlob.Update();
+
+        // System.err.println("bott blob length? "  + bottom.size());
+        //FloatBlobVector top = caffe_net.ForwardPrefilled();
+        caffe_net.ForwardFrom(1);
+        float out2 = caffe_net.blob_by_name("tanhFinal").cpu_data().get();
+        if (Float.isNaN(out) || out2 == out) {
+            System.err.println("is nan you  or producing same output..." + out + " " + out2);
+            out = 0;
+            //f.printFeatures(context, p);
+            // modelFile = "/home/dfreelan/dev/networks/_iter_350000.caffemodel";
+            paramFile = "/home/dfreelan/dev/networks/singleLayerExample.prototxt";
+            Caffe.set_mode(Caffe.CPU);
+
+            try {
+                //String str = FileUtils.readFileToString(new File(paramFile), "utf-8");
+                ///System.err.println(str);
+                if (modelFile != null) {
+                    caffe_net = new FloatNet(paramFile, TEST);
+                    caffe_net.CopyTrainedLayersFrom(modelFile);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(0);
+            }
+            return getCritique(context, p);
+        }
+
+        //System.err.println(" i made a deicsion! "  + out);
+        return (out + 1.0) / 2.0;
         //NeuralDataSet sample = new BasicNeuralDataSet(new double[][] 
         //{ f.getFeatures(true, context, context.getPlayer(playerID)) }); 
 
     }
 
+    public double getSum(ArrayList<Double> weights) {
+        double sum = 0.0;
+
+        for (Double a : weights) {
+            sum += a;
+        }
+
+        return sum;
+    }
+
+    public double getNumOnes(ArrayList<Double> weights) {
+        double sum = 0.0;
+
+        for (Double a : weights) {
+            if (a == 1.0) {
+                sum += a;
+            }
+        }
+
+        return sum;
+    }
+
+    public float[] toFloats(double[] doubles) {
+        float[] floats = new float[doubles.length];
+        int i = 0;
+        for (double a : doubles) {
+            floats[i] = (float) a;
+            i++;
+        }
+        return floats;
+    }
+
     @Override
     public GameCritique clone() {
 
-        MCTSCritique clone = new MCTSCritique();
-        clone.network = (BasicNetwork) this.network.clone();
+        MCTSCritique clone = new MCTSCritique(modelFile);
         clone.f = this.f.clone();
 
         return clone;
     }
 
-    public GameContext RandomizeSimulation(GameContext simulation, Player player) {
+    public GameContext playSimulation(GameContext simulation, ExperimentalMCTS mctsP1, ExperimentalMCTS mctsP2) {
+        this.RandomizeSimulation(simulation);
+
+        simulation.getPlayer1().setBehaviour(mctsP1);
+        simulation.getPlayer2().setBehaviour(mctsP2);
+
+        simulation.play();
+        return simulation;
+    }
+
+    public GameContext RandomizeSimulation(GameContext simulation) {
         simulation.getPlayer2().getDeck().shuffle();
         simulation.getPlayer1().getDeck().shuffle();
-        Player opponent;
-        if (player.getId() == 0) {
-            opponent = simulation.getPlayer2();
-        } else {
-            opponent = simulation.getPlayer1();
-        }
-        opponent.getDeck().addAll(opponent.getHand());
-        int handSize = opponent.getHand().getCount();
+        Player p1 = simulation.getPlayer1();;
+        Player p2 = simulation.getPlayer2();
+
+        p1.getDeck().addAll(p1.getHand());
+        int handSize = p1.getHand().getCount();
         for (int k = 0; k < handSize; k++) {
-            Card card = opponent.getHand().get(0);
-            simulation.getLogic().removeCard(opponent.getId(), card);
+            Card card = p1.getHand().get(0);
+            simulation.getLogic().removeCard(p1.getId(), card);
         }
-        opponent.getDeck().shuffle();
+        p1.getDeck().shuffle();
         for (int a = 0; a < handSize; a++) {
-            simulation.getLogic().receiveCard(opponent.getId(), opponent.getDeck().removeFirst());
+            simulation.getLogic().receiveCard(p1.getId(), p1.getDeck().removeFirst());
         }
 
-        if (player.getId() == 1) {
-            opponent = simulation.getPlayer2();
-        } else {
-            opponent = simulation.getPlayer1();
-        }
-        opponent.getDeck().addAll(opponent.getHand());
-        handSize = opponent.getHand().getCount();
+        p2.getDeck().addAll(p2.getHand());
+        handSize = p2.getHand().getCount();
         for (int k = 0; k < handSize; k++) {
-            Card card = opponent.getHand().get(0);
-            simulation.getLogic().removeCard(opponent.getId(), card);
+            Card card = p2.getHand().get(0);
+            simulation.getLogic().removeCard(p2.getId(), card);
         }
-        opponent.getDeck().shuffle();
+        p2.getDeck().shuffle();
         for (int a = 0; a < handSize; a++) {
-            simulation.getLogic().receiveCard(opponent.getId(), opponent.getDeck().removeFirst());
+            simulation.getLogic().receiveCard(p2.getId(), p2.getDeck().removeFirst());
         }
 
         return simulation;
     }
 
-    public void saveDataToDB(double[][] data, double[][] labels) throws Exception {
-        WriteBatch batch;
-        Options options = new Options();
-        options.createIfMissing(true);
-        new File("HearthstoneData").delete();
-
-        DB db = factory.open(new File("HearthstoneData"), options);
-
-        batch = db.createWriteBatch();
-
-        for (int i = 0; i < data.length; i++) {
-            //batch.put(toByteArray(i),);
-        }
-        /*optional int32 channels = 1;
-         optional int32 height = 2;
-         optional int32 width = 3;
-         // the actual image data, in bytes
-         optional bytes data = 4;
-         optional int32 label = 5;
-         // Optionally, the datum could also hold float data.
-         repeated float float_data = 6;
-         // If true data contains an encoded image that need to be decoded
-         optional bool encoded = 7 [default = false];*/
-        db.write(batch);
-        batch.close();
-        db.close();
-
-    }
-
-    public byte[] toByteArray(float... values) {
-        ByteBuffer bbuf = ByteBuffer.allocate(4 * values.length);
-
-        for (float v : values) {
-            bbuf.putFloat(v);
-        }
-
-        return bbuf.array();
-    }
-
-    public byte[] toByteArray(int... values) {
-        ByteBuffer bbuf = ByteBuffer.allocate(4 * values.length);
-
-        for (int v : values) {
-            bbuf.putInt(v);
-        }
-
-        return bbuf.array();
-    }
-
-    public byte[] toByteArray(Datum a) {
-        byte[] bytes = new byte[4 * 4 + a.data.length + 1];
-        ByteBuffer bbuf = ByteBuffer.allocate(4 * 4 + a.data.length + 1);
-
-        bbuf.putInt(a.channels);
-        bbuf.putInt(a.height);
-        bbuf.putInt(a.width);
-
-        bbuf.put(toByteArray(a.data));
-
-        //bbuf.put(a.label);
-        return bytes;
-
-    }
-    public void sendCaffeData(double[][] data2, double[][] labels2, String name, boolean ordered, int numItemsInBatch, int numBatches){
-        double[][] batchedData = new double[numBatches*numItemsInBatch][];
-        double[][] batchedLabels = new double[numBatches*numItemsInBatch][];
+    public void sendCaffeData(double[][] data2, double[][] labels2, double[][] weights, String name, boolean ordered, int numItemsInBatch, int numBatches, boolean file) {
+        double[][] batchedData = new double[numBatches * numItemsInBatch][];
+        double[][] batchedLabels = new double[numBatches * numItemsInBatch][];
+        double[][] batchedWeights = new double[numBatches * numItemsInBatch][];
         Random generator = new Random();
-        
-        for(int i = 0; i<batchedData.length; i++){
-            if(i%1000 == 0 )
+
+        for (int i = 0; i < batchedData.length; i++) {
+            if (i % 1000 == 0) {
                 System.err.println("i is " + i);
+            }
             int randomIndex = generator.nextInt(data2.length);
             batchedData[i] = data2[randomIndex];
             batchedLabels[i] = labels2[randomIndex];
+            batchedWeights[i] = weights[randomIndex];
         }
-        
-        sendCaffeData(batchedData,batchedLabels,name,true);
-        
-        
+
+        sendCaffeData(batchedData, batchedLabels, batchedWeights, name, true, file);
+
     }
-    public void sendCaffeData(double[][] data2, double[][] labels2, String name, boolean ordered) {
+
+    public void sendCaffeData(double[][] data2, double[][] labels2, double[][] weights, String name, boolean ordered, boolean file) {
         double[][] data = new double[data2.length][];
         double[][] labels = new double[data2.length][];
-        if(!ordered){
-            for(int i = 0; i<data2.length; i++){
+        if (!ordered) {
+            for (int i = 0; i < data2.length; i++) {
                 data[i] = data2[i].clone();
                 labels[i] = labels2[i].clone();
             }
-        }else{
+        } else {
             data = data2;
             labels = labels2;
         }
         try {
-            
             String sentence;
             String modifiedSentence;
             Random generator = new Random();
             //set up our socket server
-            Socket clientSocket = new Socket("localhost", 5003);
-            DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
-            BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            outToServer.writeBytes(name + "\n");
-            outToServer.writeBytes((data.length + " " + data[0].length + " " + labels[0].length) + "\n");
-            
+
+            BufferedReader inFromServer = null;
+            DataOutputStream outToServer = null;
+            Socket clientSocket = null;
+
             //add in data in a random order
+            if (!file) {
+                System.err.println("starting to send on socket");
+                clientSocket = new Socket("localhost", 5004);
+                clientSocket.setTcpNoDelay(false);
+                outToServer = new DataOutputStream(clientSocket.getOutputStream());
+                inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                outToServer.writeBytes(name + "\n");
+
+                outToServer.writeBytes((data.length + " " + data[0].length + " " + labels[0].length) + "\n");
+                try {
+                    Thread.sleep(10000);
+                } catch (Exception e) {
+                }
+            } else {
+                outToServer = new DataOutputStream((OutputStream) new FileOutputStream(name));
+            }
+            StringBuffer wholeMessage = new StringBuffer();
             for (int i = 0; i < data.length; i++) {
-                if(i%1000 == 0 )
-                    System.err.println("i is " + i);
+                if (i % 1000 == 0) {
+                    System.err.println("(constructed) i is " + i);
+                }
                 String features = "";
-                int randomIndex = generator.nextInt(data.length-i);   
-            
-                if(!ordered){
-                    swap(data,i,i+randomIndex);
-                    swap(labels,i,i+randomIndex);
+                int randomIndex = generator.nextInt(data.length - i);
+
+                if (!ordered) {
+                    swap(data, i, i + randomIndex);
+                    swap(labels, i, i + randomIndex);
                 }
                 for (int a = 0; a < data[i].length; a++) {
-                    features += data[i][a] + " ";
+                    wholeMessage.append(data[i][a] + " ");
                 }
+                wholeMessage.append("\n");
                 String myLabels = "";
                 for (int a = 0; a < labels[i].length; a++) {
-                    myLabels += labels[i][a] + " ";
+                    wholeMessage.append(labels[i][a] + " ");
                 }
-                System.err.println("writing some bytes");
-                outToServer.writeBytes(features +"\n");
-                System.err.println("writing some more bytes");
-                outToServer.writeBytes(myLabels + "\n");
+                wholeMessage.append("\n");
+                wholeMessage.append(weights[i][0] + "");
+                wholeMessage.append("\n");
+                outToServer.writeBytes(wholeMessage.toString());
+                wholeMessage = new StringBuffer();
+
+            }
+            System.err.println("total message size is " + wholeMessage.toString().length());
+
+            //outToServer.writeBytes(wholeMessage.toString());
+            if (!file) {
+                System.err.println("sending done");
+                outToServer.writeBytes("done\n");
+                System.err.println("waiting for ack...");
+                inFromServer.readLine();
+                System.err.println("got the ack!");
+                clientSocket.close();
             }
 
-            outToServer.writeBytes("done\n");
-            inFromServer.readLine();
-            clientSocket.close();
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("server wasn't waiting");
@@ -456,40 +514,77 @@ public class MCTSCritique implements GameCritique {
         System.err.println("hey i sent somethin!");
 
     }
-    public void swap(double[][] data, int index1, int index2){
+
+    public void swap(double[][] data, int index1, int index2) {
         double[] temp = data[index1];
         data[index1] = data[index2];
         data[index2] = temp;
     }
+
     private double getErrorIfZero(double[][] testingLabels) {
         double sum = 0;
-        for(int i = 0; i<testingLabels.length; i++){
-            sum += testingLabels[i][0]*testingLabels[i][0];
+        for (int i = 0; i < testingLabels.length; i++) {
+            sum += testingLabels[i][0] * testingLabels[i][0];
         }
-        return sum/((double)testingLabels.length);
+        return sum / ((double) testingLabels.length);
     }
-    
-    private double getIdealTestingError(double[][] labels, ArrayList<GameContext> games, ArrayList<Double> testValues){
+
+//just do hdf5 in java
+    private double getIdealTestingError(double[][] labels, ArrayList<GameContext> games, ArrayList<Double> testValues) {
         double sum = 0;
-        
-        for(int i = 0; i<labels.length; i++){
-           if(testValues.size() != labels.length){
-               System.err.println("MISMATCH!");
-               System.exit(0);
-           }
-            
+
+        for (int i = 0; i < labels.length; i++) {
+            if (testValues.size() != labels.length) {
+                System.err.println("MISMATCH!");
+                System.exit(0);
+            }
+
             double actualResult = testValues.get(i);
 
-            sum+= ((labels[i][0]-actualResult)*(labels[i][0]-actualResult))/((double)labels.length);
-            if(Double.isInfinite((labels[i][0]-actualResult)*(labels[i][0]-actualResult))){
-                System.err.println("HEY FUCK UP!! " + labels[i][0]  + " " + actualResult);
+            sum += ((labels[i][0] - actualResult) * (labels[i][0] - actualResult)) / ((double) labels.length);
+            if (Double.isInfinite((labels[i][0] - actualResult) * (labels[i][0] - actualResult))) {
+                System.err.println("HEY FUCK UP!! " + labels[i][0] + " " + actualResult);
             }
-            System.err.println("test value was " + labels[i][0] + " actual value " + actualResult + " " + labels.length +  " " + testValues.size());
-            
+            System.err.println("test value was " + labels[i][0] + " actual value " + actualResult + " " + labels.length + " " + testValues.size());
+
         }
         return sum;
+
     }
 
+}
+
+class FileOutStream extends OutputStream {
+    //DataOutputStream(OutputStream out)
+
+    File file = null;
+
+    BufferedWriter output = null;
+
+    public FileOutStream(String fileName) {
+        try {
+            file = new File(fileName);
+            output = new BufferedWriter(new FileWriter(file));
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(0);
+        }
+    }
+
+    @Override
+    public void write(byte[] b) {
+        try {
+            output.write(new String(b));
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(0);
+        }
+    }
+
+    @Override
+    public void write(int b) throws IOException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }
 
 class Datum {

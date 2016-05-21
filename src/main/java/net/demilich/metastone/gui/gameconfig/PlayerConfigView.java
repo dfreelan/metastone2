@@ -17,8 +17,10 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import net.demilich.metastone.bahaviour.ModifiedMCTS.GameCritique;
+import net.demilich.metastone.bahaviour.ModifiedMCTS.MCTSCritique;
 import net.demilich.metastone.bahaviour.ModifiedMCTS.PlayWithCritique;
 import net.demilich.metastone.bahaviour.ModifiedMCTS.TDNeuralCritique;
+import net.demilich.metastone.behaviour.StochasticKnowledgeMCTS.StochasticMCTS;
 import net.demilich.metastone.game.GameContext;
 import net.demilich.metastone.game.Player;
 import net.demilich.metastone.game.behaviour.GreedyOptimizeMove;
@@ -187,11 +189,11 @@ public class PlayerConfigView extends VBox {
         //10000 and 30:
         //39:11 (took 40 minutes!)
         //36:14 took 43 minutes!
-        ExperimentalMCTS singleton = new ExperimentalMCTS(40000, 15, 1.414, false);
+        ExperimentalMCTS singleton = new ExperimentalMCTS(40000, 15, 1.414, false,false);
         singleton.setName("10000 and 60 trees, not clairvoyant");
         behaviourList.add(singleton);
 
-        ExperimentalMCTS quadTree = new ExperimentalMCTS(10000, 30, 1.2, false);
+        ExperimentalMCTS quadTree = new ExperimentalMCTS(10000, 15, 1.4, false,false);
         quadTree.setName("10000 and 30 trees");
         behaviourList.add(quadTree);
 
@@ -199,7 +201,7 @@ public class PlayerConfigView extends VBox {
 
         behaviourList.add(new PlayAllRandomBehavior());
 
-        TDNeuralCritique critique = new TDNeuralCritique();
+        MCTSCritique critique;
         GameContext game;
         
         Deck deck = loadDeck("WARRIOR");
@@ -224,7 +226,13 @@ public class PlayerConfigView extends VBox {
         two = new Player(p2Conf);
         System.err.println("one is" + one.getId());
         game = new GameContext(one, two, new GameLogic());
-        critique.trainBasedOnActor(new PlayAllRandomBehavior(), game, one);
+        critique = new MCTSCritique("null");
+        critique.trainBasedOnActor(new PlayAllRandomBehavior(), game.clone(), one);
+        //new ExperimentalMCTS(1000,15,1.414,false)
+        //two.setBehaviour(new ModifiedMCTS(1000,15,1.414, critique));
+        StochasticMCTS subject = new StochasticMCTS(20000,15,1.4, critique);
+        subject.setName("stochastic mcts, 20k");
+        behaviourList.add(subject);
         
         behaviourList.add(new PlayWithCritique(critique));
                 

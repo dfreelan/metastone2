@@ -1,5 +1,6 @@
-package net.demilich.metastone.bahaviour.ModifiedMCTS;
+package net.demilich.metastone.behaviour.StochasticKnowledgeMCTS;
 
+import net.demilich.metastone.bahaviour.ModifiedMCTS.*;
 import net.demilich.metastone.game.behaviour.experimentalMCTS.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,23 +80,19 @@ import net.demilich.metastone.game.targeting.CardReference;
 //TODO:
 //add feature collector to the treewrapper
 
-public class ModifiedMCTS extends Behaviour {
-    static{
-        System.err.println("made sure we're cloning every time");
-    }
+public class StochasticMCTS extends Behaviour {
+
     int numTrees;
     int numRollouts;
     double exploreFactor;
     public static GameAction lastPlayedAction = null;
-    public static boolean useBoth = false;
     String name = "Experimental MCTS";
     CardReference prevCardReference;
     GameCritique critique;
-    public ModifiedMCTS(int numRollouts, int numTrees, double exploreFactor, GameCritique critique, boolean useBoth) {
+    public StochasticMCTS(int numRollouts, int numTrees, double exploreFactor, GameCritique critique ) {
         this.numTrees = numTrees;
         this.numRollouts = numRollouts;
         this.exploreFactor = exploreFactor;
-        ModifiedMCTS.useBoth = useBoth;
         this.critique = critique;
     }
 
@@ -125,7 +122,7 @@ public class ModifiedMCTS extends Behaviour {
     
     @Override
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
-        context= context.clone();
+        
         //System.err.println("our critiquer thinks: " + critique.getCritique(context));
         //System.err.println("an action is being requested of me");
        // System.err.println("here's what the board looks like to me");
@@ -139,7 +136,7 @@ public class ModifiedMCTS extends Behaviour {
         if (isCard(prev)) {
             prevCardReference = ((PlayCardAction) prev).getCardReference();
         }
-        //System.err.println("returned an action " + prev + " " + prev.getTargetKey());
+        System.err.println("returned an action " + prev + " " + prev.getTargetKey());
         return prev;
     }
 
@@ -193,8 +190,11 @@ class TreeWrapper {
         double totalScore[] = new double[validActions.size()];
         for (int a = 0; a < results.length; a++) {
             for (int i = 0; i < results[a].length; i++) {
-                if(results[a][i]!=Integer.MIN_VALUE)
+                if(results[a][i]!=Integer.MIN_VALUE){
+                    System.err.println(results[a][i] + " the results say " + a + " " + i);
                     totalScore[i] += results[a][i] / numTrees;
+                    
+                }
             }
         }
         double bestScore = Double.NEGATIVE_INFINITY;
@@ -211,16 +211,16 @@ class TreeWrapper {
                 secondBestAction = validActions.get(i);
                 secondBestScore = totalScore[i];
             }
-            //System.err.println("action " + validActions.get(i) + " fitness: " + totalScore[i]);
+            System.err.println("action " + validActions.get(i) + " fitness: " + totalScore[i]);
         }
 
         
         if (bestAction.getActionType() != ActionType.PHYSICAL_ATTACK) {
-            ModifiedMCTS.lastPlayedAction = bestAction;
+            StochasticMCTS.lastPlayedAction = bestAction;
         }
         winner = bestAction;
 
-        System.err.println("ROBOT action was: " + bestAction + " turn is "  + context.getTurn()+ "score:" + bestScore);
+        //System.err.println("ROBOT action was: " + bestAction + " turn is "  + context.getTurn());
         return winner;
     }
 
@@ -257,14 +257,16 @@ class TreeWrapper {
         //   System.err.println("HEY THIS HAPPEND");
 
         //}
-        MCTSTreeNode root = gameTree.root;
+        StochasticMCTSNode root = gameTree.root;
 
         //accumulate results
         for (int a = 0; a < root.children.size(); a++) {
-            MCTSTreeNode child = root.children.get(a);
-            if(child.nVisits != Integer.MAX_VALUE)
+            StochasticMCTSNode child = root.children.get(a);
+            if(child.nVisits != Integer.MAX_VALUE){
+                if(child.nVisits == 0)
+                    child.nVisits = 1;
                 results[index][a] += child.totValue[player.getId()] / child.nVisits;
-            else{
+            }else{
                 results[index][a] = Integer.MIN_VALUE;
              }
 

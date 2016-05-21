@@ -1,0 +1,91 @@
+am playing
+16:01:46 INFO  - ./training folder created
+cats
+cats
+16:02:01 INFO  - Starting simulation on 4 cores
+player 1 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player -1 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+16:52:23 INFO  - Simulation finished
+cats
+cats
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+nah i'm calling this one
+player 0 wins!

@@ -246,7 +246,7 @@ public class MCTSTreeNode {
     public void performBattlecryAction(GameContext simulation, GameAction battlecry){
          boolean resolvedLate = simulation.getLogic().minion.getBattlecry().isResolvedLate();
         
-      //  if(resolvedLate){
+       //  if(resolvedLate){
        //     simulation.getLogic().preProcessLate();
        // }
         simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);

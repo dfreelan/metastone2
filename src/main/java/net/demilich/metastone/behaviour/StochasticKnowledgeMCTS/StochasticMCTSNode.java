@@ -1,6 +1,6 @@
-package net.demilich.metastone.bahaviour.ModifiedMCTS;
-//1st tab: .5 and .5, second tab, 1.0 neural, 3rd tab .8 neural and .2 play
+package net.demilich.metastone.behaviour.StochasticKnowledgeMCTS;
 
+import net.demilich.metastone.bahaviour.ModifiedMCTS.*;
 import net.demilich.metastone.game.behaviour.experimentalMCTS.*;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,19 +27,19 @@ import net.demilich.metastone.game.targeting.CardReference;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 /*
- * 
+ *
  *  largely inspired from (as copy-pasted then heavily modified)
  *  http://mcts.ai/code/java.html
- *  
+ *
  */
-public class MCTSTreeNode {
+public class StochasticMCTSNode {
 
     static Random r = new Random();
 
     CardCollection preShuffledDeck;
     static double epsilon = 1e-6;
 
-    List<MCTSTreeNode> children = null;
+    List<StochasticMCTSNode> children = null;
     double nVisits;
     double totValue[] = new double[2];
     GameContext context;
@@ -53,15 +53,13 @@ public class MCTSTreeNode {
     private boolean firstEndTurn = false;
     boolean isABattleCryNode = false;
     GameCritique critique;
+
+
+    NormalDistribution stateEvaluation = null;
+    double virtualVisits = 1.0;
     FeatureCollector f;
-
-    static {
-        System.err.println("settings should be in place .5 neural and .5 rand FIXED cloning plus rolloutfix? PLAYER FOR REAL really ok\n");
-        System.err.println("cmon compiledd right");
-    }
-
     //CardReference prevCardReference;
-    public MCTSTreeNode(GameContext simulation, double exploreFactor, boolean firstEndTurn, FeatureCollector f, GameCritique critique) {
+    public StochasticMCTSNode(GameContext simulation, double exploreFactor, boolean firstEndTurn, FeatureCollector f, GameCritique critique) {
         this.context = simulation;
         this.exploreFactor = exploreFactor;
         this.f = f;
@@ -70,11 +68,11 @@ public class MCTSTreeNode {
 
     boolean amRoot = false;
     boolean beingCalledFromResolve = false;
-
+    boolean actionApplied = false;
     public void selectAction() {
         //context.play();
-        List<MCTSTreeNode> visited = new LinkedList<MCTSTreeNode>();
-        MCTSTreeNode cur = this;
+        List<StochasticMCTSNode> visited = new LinkedList<StochasticMCTSNode>();
+        StochasticMCTSNode cur = this;
         amRoot = true;
         visited.add(this);
         while (!cur.isLeaf()) {
@@ -89,10 +87,10 @@ public class MCTSTreeNode {
         }
         if (!cur.context.gameDecided()) {
             cur.expand(cur.context.getActivePlayerId());
-            MCTSTreeNode newNode = cur.select();
+            StochasticMCTSNode newNode = cur.select();
             visited.add(newNode);
 
-            if (!(newNode.action.getActionType() == ActionType.BATTLECRY)) {
+            if (!(newNode.action.getActionType()==ActionType.BATTLECRY)) {
                 value = rollOut(newNode, newNode.action);
             } else {
                 //System.err.println("i selection node with action " + newNode.action.getTargetKey());
@@ -114,7 +112,7 @@ public class MCTSTreeNode {
             value = -1;
         }
 
-        for (MCTSTreeNode node : visited) {
+        for (StochasticMCTSNode node : visited) {
             node.updateStats(value);
         }
     }
@@ -131,22 +129,49 @@ public class MCTSTreeNode {
         return (randomAction.getActionType() == ActionType.SUMMON || randomAction.getActionType() == ActionType.SPELL || randomAction.getActionType() == ActionType.EQUIP_WEAPON);
 
     }
-    Hashtable<Integer, MCTSTreeNode> childHash = null;
+    Hashtable<Integer, StochasticMCTSNode> childHash = null;
 
-    public int hash(MCTSTreeNode state) {
+    public int hash(StochasticMCTSNode state) {
         return state.context.toString().hashCode();
+    }
+    private void initEvaluation(GameContext resultingContext, int pid){
+        double netEval = critique.getCritique(resultingContext, context.getPlayer(pid));
+        this.stateEvaluation = new NormalDistribution(netEval,.16);
+    }
+    public double sampleEval(){
+
+        applyAction();
+        double value = -100;
+        int count = 0;
+        while(value<0 || value > 1){
+            value = stateEvaluation.sample();
+            if(count>10000){
+                System.err.println("took too long");
+                System.exit(0);
+            }
+            count++;
+        }
+        if(this.activePlayer == 0){
+            value = 1-value;
+        }
+        return value;
     }
 
     public void applyAction() {
-        if (action == null) {//this should only really happen for the root node.
+
+        if (action == null || actionApplied) {//null should only really happen for the root node
             return;
         }
-
+        actionApplied = true;
+        int origionalPID = context.getActivePlayerId();
+        this.activePlayer = origionalPID;
+        if(origionalPID == -1)
+        System.err.println("orig pid" + origionalPID);
         //this.context = this.context.clone();
-        if (action.getActionType() == ActionType.BATTLECRY) {
+        if(action.getActionType() == ActionType.BATTLECRY){
             context.getLogic().battlecries = null;
-            performBattlecryAction(context, action);
-        } else {
+            performBattlecryAction(context,action);
+        }else{
             context.getLogic().simulationActive = true;
             context.getLogic().battlecries = null;
             context.getLogic().performGameAction(context.getActivePlayerId(), action);
@@ -162,7 +187,7 @@ public class MCTSTreeNode {
         } else {
             actions = context.getValidActions();
         }
-
+        this.initEvaluation(context,origionalPID);
     }
 
     public void expand(int playerID) {
@@ -171,33 +196,43 @@ public class MCTSTreeNode {
         if (actions.size() == 0) {
             throw new RuntimeException("There were 0 actions supplied after applying action " + action + "in context " + this.context);
         }
-        ArrayList<MCTSTreeNode> newNodes = new ArrayList<MCTSTreeNode>(actions.size());
+        ArrayList<StochasticMCTSNode> newNodes = new ArrayList<StochasticMCTSNode>(actions.size());
 
         for (GameAction action : actions) {
-            MCTSTreeNode newNode = new MCTSTreeNode(context.clone(), exploreFactor, firstEndTurn, f, critique);
+            StochasticMCTSNode newNode = new StochasticMCTSNode(context.clone(), exploreFactor, firstEndTurn,f,critique);
 
             newNode.action = action;
+
             newNodes.add(newNode);
-            if (this.beingCalledFromResolve) {
+            if(this.beingCalledFromResolve){
                 newNode.isABattleCryNode = true;
             }
-
         }
         children = newNodes;
         this.activePlayer = context.getActivePlayerId();
 
+
+
+
     }
+    private double getMCTSValue(double expValue,double nVisits, double virtualValue){
+        double exploitParam = (this.virtualVisits*virtualValue + nVisits*expValue);
+        exploitParam/= (nVisits+this.virtualVisits);
 
-    private MCTSTreeNode select() {
-        MCTSTreeNode selected = children.get(0);
+        double exploreParam = + exploreFactor * (Math.sqrt(Math.log(nVisits + this.virtualVisits + 1) / (nVisits + this.virtualVisits)));
+        ///if(exploitParam + exploreParam)
+        return exploitParam + exploreParam;
 
-        double bestValue = (selected.totValue[activePlayer]) / (selected.nVisits + epsilon)
-                + exploreFactor * (Math.sqrt(Math.log(nVisits + 1) / (selected.nVisits + epsilon))) + r.nextDouble() * epsilon;
+
+    }
+    private StochasticMCTSNode select() {
+        StochasticMCTSNode selected = children.get(0);
+
+        double bestValue = getMCTSValue(selected.totValue[activePlayer],selected.nVisits,selected.sampleEval());
 
         for (int i = 1; i < children.size(); i++) {
-            MCTSTreeNode c = children.get(i);
-            double uctValue = (c.totValue[activePlayer]) / (c.nVisits + epsilon)
-                    + exploreFactor * (Math.sqrt(Math.log(nVisits + 1) / (c.nVisits + epsilon))) + r.nextDouble() * epsilon;
+            StochasticMCTSNode c = children.get(i);
+            double uctValue = getMCTSValue(c.totValue[activePlayer],c.nVisits,c.sampleEval());
             // small random number to break ties randomly in unexpanded nodes
             if (uctValue > bestValue) {
                 selected = c;
@@ -213,76 +248,93 @@ public class MCTSTreeNode {
         return children == null;
     }
 
-    public double rollOut(MCTSTreeNode tn, GameAction battlecry) {
+    public double rollOut(StochasticMCTSNode tn, GameAction battlecry) {
         //play a random game of hearthstone...
 
         GameContext simulation = tn.context.clone();
-        Player p = simulation.getActivePlayer();
-        int pid = p.getId();
-        if (action != null && this.action.getActionType() == ActionType.END_TURN) {
-            pid = 1 - pid;
-        }
 
-        simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);
-        double neuralValue = 0;
-        if (ModifiedMCTS.useBoth) {
-            neuralValue = critique.getCritique(simulation, simulation.getPlayer(pid));
-            if (pid == 0) {
-                neuralValue = 1 - neuralValue;
-            }
-        } else {
-            neuralValue = 1-critique.getCritique(simulation, simulation.getPlayer(0));
-            neuralValue += critique.getCritique(simulation, simulation.getPlayer(1));
-            neuralValue/=2;
-        }
+        int pid = activePlayer;
 
+
+       // simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);
+
+        double neuralValue = critique.getCritique(simulation, simulation.getPlayer(pid));
+         if(Double.isNaN(neuralValue)){
+
+             System.err.println("neural network value was null");
+             System.exit(0);
+         }
+        double oldValue = neuralValue;
+        int count = 0;
+        do{
+            neuralValue =  new NormalDistribution(oldValue,.2).sample();
+            count++;
+            if(count>10000){
+                System.err.println("count take too long 2 "  + oldValue);
+                System.exit(0);
+            }        
+        }while(neuralValue <0 || neuralValue > 1);
+
+         if(Double.isNaN(neuralValue)){
+
+             System.err.println("nnormalDist returned null becuse apache sucks balls");
+             System.exit(0);
+         }
+
+
+        if(pid == 0){
+            neuralValue = 1-neuralValue;
+        }
         //simulation.getLogic().rolloutActive = true;
         //simulation.getLogic().checkForDeadEntities();
-        simulation.playFromMiddle();
+        //simulation.playFromMiddle();
 
-        double playthroughValue = simulation.getWinningPlayerId();
+        //double playthroughValue = simulation.getWinningPlayerId();
 
-        return .5 * neuralValue + .5 * playthroughValue;
+        return neuralValue;
 
     }
     Random generator = new Random();
-
-    public double rollOutBattleCry(MCTSTreeNode tn, GameAction battlecry) {
+    public double rollOutBattleCry(StochasticMCTSNode tn, GameAction battlecry) {
         //play a random game of hearthstone... but battlecry first
         //System.err.println("if you get in here it's invalid");
         GameContext simulation = tn.context.clone();
-        Player p = simulation.getActivePlayer();
-        int pid = p.getId();
+
+        int pid = activePlayer;
         //simulation.getLogic().rolloutActive = true;
-        performBattlecryAction(simulation, battlecry);
-        double neuralValue = 0;
-        if (ModifiedMCTS.useBoth) {
-            neuralValue = critique.getCritique(simulation, simulation.getPlayer(pid));
-            if (pid == 0) {
-                neuralValue = 1 - neuralValue;
-            }
-        } else {
-            neuralValue = 1-critique.getCritique(simulation, simulation.getPlayer(0));
-            neuralValue += critique.getCritique(simulation, simulation.getPlayer(1));
-            neuralValue/=2;
+//        performBattlecryAction(simulation,battlecry);
+
+        double neuralValue = critique.getCritique(simulation,simulation.getPlayer(pid));
+        double oldValue = neuralValue;
+        int count = 0;
+          do{
+            neuralValue =  new NormalDistribution(oldValue,.2).sample();
+            count++;
+            if(count>10000){
+                System.err.println("count take too long 2 "  + oldValue);
+                System.exit(0);
+            }        
+        }while(neuralValue <0 || neuralValue > 1);
+
+        if(pid == 0){
+            neuralValue = 1-neuralValue;
         }
 
-        simulation.playFromMiddle();
+        //simulation.playFromMiddle();
 
-        double playthroughValue = simulation.getWinningPlayerId();
+       // double playthroughValue = simulation.getWinningPlayerId();
 
-        return .5 * neuralValue + .5 * playthroughValue;
+        return neuralValue;
     }
-
-    public void performBattlecryAction(GameContext simulation, GameAction battlecry) {
-        boolean resolvedLate = simulation.getLogic().minion.getBattlecry().isResolvedLate();
+    public void performBattlecryAction(GameContext simulation, GameAction battlecry){
+         boolean resolvedLate = simulation.getLogic().minion.getBattlecry().isResolvedLate();
 
         simulation.getLogic().performGameAction(simulation.getActivePlayerId(), battlecry);
         simulation.getLogic().checkForDeadEntities();
 
-        if (resolvedLate) {
+        if(resolvedLate){
             simulation.getLogic().afterBattlecryLate();
-        } else {
+        }else{
             simulation.getLogic().afterBattlecry();
         }
 
@@ -291,15 +343,15 @@ public class MCTSTreeNode {
 
         simulation.getEnvironment().remove(Environment.TARGET);
 
+
         simulation.getLogic().minion = null;
         simulation.getLogic().resolveBattlecry = false;
 
     }
-
     public void updateStats(double value) {
         nVisits++;
         if (value != -1.0) {
-            totValue[0] += 1 - value;
+            totValue[0] += 1-value;
             totValue[1] += value;
         }
     }
@@ -316,7 +368,7 @@ public class MCTSTreeNode {
         }
 
         for (int i = 0; i < children.size(); i++) {
-            MCTSTreeNode child = children.get(i);
+            StochasticMCTSNode child = children.get(i);
 
 //System.err.println("CHILD TOT VALLUE " + child.totValue[child.context.getActivePlayerId()] + " " + "best " + best);
             double fitness = child.totValue[activePlayer] / (1 + child.nVisits);
@@ -326,15 +378,16 @@ public class MCTSTreeNode {
                 bestAction = actions.get(i);
                 best = fitness;
             }
+
         }
-        //       System.err.println("best action: " + bestAction + " " + best);
+ //       System.err.println("best action: " + bestAction + " " + best);
         return bestAction;
 
     }
 
-    public MCTSTreeNode getBestChild() {
+    public StochasticMCTSNode getBestChild() {
         double best = Double.NEGATIVE_INFINITY;
-        MCTSTreeNode bestChild = null;
+        StochasticMCTSNode bestChild = null;
         //if (children.size() == 0) {
         //   throw new RuntimeException("NO CHILDREN");
         //   }
@@ -342,7 +395,7 @@ public class MCTSTreeNode {
             return null;
         }
         for (int i = 0; i < children.size(); i++) {
-            MCTSTreeNode child = children.get(i);
+            StochasticMCTSNode child = children.get(i);
             //System.err.println("CHILD TOT VALLUE " + child.totValue[child.context.getActivePlayerId()] + " " + "best " + best);
             double fitness = child.totValue[activePlayer] / (1 + child.nVisits);
             if (fitness > best && child.nVisits > 50) {
@@ -356,7 +409,7 @@ public class MCTSTreeNode {
     public void printMostLikelyEvents() {
         System.err.println("player " + context.getActivePlayerId());
         System.err.println("will " + getBestAction());
-        MCTSTreeNode bestChild = getBestChild();
+        StochasticMCTSNode bestChild = getBestChild();
         if (bestChild != null) {
             double fitness = bestChild.totValue[context.getActivePlayerId()] / (1 + bestChild.nVisits);
             System.err.println("it was visited " + getBestChild().nVisits + " times. Fitness :" + fitness);
@@ -390,8 +443,8 @@ public class MCTSTreeNode {
         }
         int origParent = parent[0];
         for (int i = 0; i < this.children.size(); i++) {
-            MCTSTreeNode child = children.get(i);
-            // do the transition here        
+            StochasticMCTSNode child = children.get(i);
+            // do the transition here
             parent[0] += 1;
             String action = child.action + "";
             if (child.action instanceof PlayCardAction) {

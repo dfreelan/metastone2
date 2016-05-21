@@ -1,0 +1,2 @@
+am playing
+22:44:57 INFO  - ./training folder created

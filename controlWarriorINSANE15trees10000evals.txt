@@ -1,0 +1,49 @@
+am playing
+05:40:50 INFO  - ./training folder created
+cats
+cats
+cats
+cats
+05:41:43 INFO  - Starting simulation on 4 cores
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 1 wins!
+player 1 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 0 wins!

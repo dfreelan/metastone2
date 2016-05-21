@@ -1,0 +1,16 @@
+am playing
+21:57:55 INFO  - ./training folder created
+21:58:19 INFO  - Starting simulation on 8 cores
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 0 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 0 wins!

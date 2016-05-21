@@ -37,8 +37,8 @@ public final class FeatureCollector implements Cloneable {
     //contains an array that holds the features
     //can query furfillOrder to populate the data
     //need to be initialized with # minions and spells in each deck
-    TIntIntHashMap enemyCardMap = new TIntIntHashMap(60);
-    TIntIntHashMap myCardMap = new TIntIntHashMap(60);
+    TIntIntHashMap enemyCardMap = new TIntIntHashMap(60,1.01f,-1,-1);
+    TIntIntHashMap myCardMap = new TIntIntHashMap(60,1.01f,-1,-1);
 
     double[] featureData; //feature array, will be resued; 
     ArrayList<Integer> cardCount = new ArrayList<Integer>();
@@ -74,14 +74,14 @@ public final class FeatureCollector implements Cloneable {
     }
      public FeatureCollector(GameContext context, Player player) {
         context = context.clone();
-        
+        System.err.println(" no entry means : "  + myCardMap.getNoEntryValue());
         player = context.getPlayer(player.getId());
         Player opponent = context.getOpponent(player);
         
         
         opponent.getDeck().addAll(opponent.getHand());
         player.getDeck().addAll(player.getHand());
-        
+        //opponent.getDeck().
         opponent.getDeck().sortByName();
         player.getDeck().sortByName();
         //self is hand,deck,played
@@ -142,15 +142,17 @@ public final class FeatureCollector implements Cloneable {
         }
         lastEnemyCard = featureCount-2;
         //feature data will be features count, my health/armor, opponent health/armor, myMana/maxMana, enemyMana/maxMana, my board(7*3), opponent board (7*3)
-        
-        featureData = new double[featureCount + 1 + 1  + 1 + 1 +2 +2 + 7*3 + 7*3];
-        this.myBoardStart = featureCount+1+1+1+1+2+2;
+        //also weapon attack and health and turn
+        featureData = new double[featureCount + 1 + 1  + 1 + 1 +2 +2 +2 + 2 +1 +1 + 1 + 2+7*3 + 7*3];
+        this.myBoardStart = featureCount+17;
         this.enemyBoardStart = myBoardStart + 7*3; 
         
      }
     
     public double[] getFeatures(boolean includeAction, GameContext context,Player player){
         //hand,deck,played
+        context = context.clone();
+        player = context.getPlayer(player.getId());
         featureData = new double[featureData.length];
         //System.err.println("feature count + " + featureCount + " featuredata size" + featureData.length );
         populateFeatureData(this.myCardMap,0,player.getHand().getList());
@@ -165,15 +167,25 @@ public final class FeatureCollector implements Cloneable {
         
         featureData[featureCount+0] = player.getHero().getArmor()/10.0;
         featureData[featureCount+1] = player.getHero().getHp()/33.0;
-         featureData[featureCount+2] = player.getMana();
-        featureData[featureCount+3] = player.getMaxMana();
+        featureData[featureCount+2] = player.getMana()/10;
+        featureData[featureCount+3] = player.getMaxMana()/10;
+        featureData[featureCount+4] = player.getHero().getAttack();
+        featureData[featureCount+5] = player.getHero().getWeapon()==null ? 0 : player.getHero().getWeapon().getDurability();
+        featureData[featureCount+6] = player.getHero().canAttackThisTurn() ? 1 : 0;
+        featureData[featureCount+7] = player.getHand().getCount();
         
         Player opponent = context.getOpponent(player);
         
-        featureData[featureCount+4] = opponent.getHero().getArmor()/10.0;
-        featureData[featureCount+5] = opponent.getHero().getHp()/33.0;
-        featureData[featureCount+6] = opponent.getMana();
-        featureData[featureCount+7] = opponent.getMaxMana();
+        featureData[featureCount+8] = opponent.getHero().getArmor()/10.0;
+        featureData[featureCount+9] = opponent.getHero().getHp()/33.0;
+        featureData[featureCount+10] = opponent.getMana()/10;
+        featureData[featureCount+11] = opponent.getMaxMana()/10;
+        featureData[featureCount+12] = opponent.getHero().getAttack();
+        featureData[featureCount+13] = opponent.getHero().getWeapon()==null ? 0 : opponent.getHero().getWeapon().getDurability();
+        featureData[featureCount+14] = opponent.getHero().canAttackThisTurn() ? 1 : 0;
+        featureData[featureCount+15] = opponent.getHand().getCount();
+        
+        featureData[featureCount+16] = context.getTurn()/100;
         
         addMinions(player.getMinions(), this.myBoardStart);
         addMinions(opponent.getMinions(), this.enemyBoardStart);
@@ -191,8 +203,7 @@ public final class FeatureCollector implements Cloneable {
                 canAttack = .9;
             featureData[currentIndex+2] = canAttack;
             
-            currentIndex+=3;
-            
+            currentIndex+=3;   
         }
         
     }
@@ -203,12 +214,12 @@ public final class FeatureCollector implements Cloneable {
             double cardsPlayed = (double) (total - (featureData[i]*2 + featureData[i+1]*2));
             featureData[i+2] = cardsPlayed/2.0;
             if(cardsPlayed<0){
-              /*  System.err.println("bad thing " + this.cardNames.get(cardNum));
+                System.err.println("bad thing " + this.cardNames.get(cardNum));
                 
                 System.err.println("cards played: " + cardsPlayed);
                 System.err.println("feature i, i+1" + featureData[i] + " " + featureData[i+1]);
                 System.err.println("total in my deck is " + total);
-                System.exit(0);*/
+                System.exit(0);
             }
         }
         for(int i = lastSelfCard+3; i<=lastEnemyCard; i+=2){
@@ -216,14 +227,28 @@ public final class FeatureCollector implements Cloneable {
             double total = this.enemyCardCount.get(cardNum);
             double cardsPlayed = (double)(total - (featureData[i]*2));
             featureData[i+1] = cardsPlayed/2.0;
+            if(cardsPlayed<0){
+                System.err.println("bad thing " + this.cardNames.get(cardNum));
+                
+                System.err.println("cards played: " + cardsPlayed);
+                System.err.println("feature i, i+1" + featureData[i] + " " + featureData[i+1]);
+                System.err.println("total in my deck is " + total);
+                System.exit(0);
+            }
         }
     }
     public void populateFeatureData(TIntIntHashMap myMap, int offset, List<Card> cards){
         
         for(Card card : cards){
             int index = myMap.get(card.getName().hashCode());
-            if(index != -1)
+            if(index != -1){ 
+                if(card.getName().contains("Aco") && myMap == this.myCardMap){
+                   // System.err.println("found another  " + card.getName() + " in my offset " + offset);
+                    
+                }
                 featureData[index+offset] += (1.0/2.0); 
+            
+            }
         }
         
     }
@@ -242,12 +267,22 @@ public final class FeatureCollector implements Cloneable {
            String numbers = this.featureData[this.lastSelfCard+3 + i*2] + " " + this.featureData[this.lastSelfCard+3 + i*2+1];
            System.err.println(this.enemyCardNames.get(i) + ": " + numbers);
        }
-       
+       /*        featureData[featureCount+0] = player.getHero().getArmor()/10.0;
+        featureData[featureCount+1] = player.getHero().getHp()/33.0;
+         featureData[featureCount+2] = player.getMana();
+        featureData[featureCount+3] = player.getMaxMana();
+        
+        Player opponent = context.getOpponent(player);
+        
+        featureData[featureCount+4] = opponent.getHero().getArmor()/10.0;
+        featureData[featureCount+5] = opponent.getHero().getHp()/33.0;
+        featureData[featureCount+6] = opponent.getMana();
+        featureData[featureCount+7] = opponent.getMaxMana();*/
         System.err.println("my armor:" + featureData[featureCount]);
         System.err.println("my hp : " + featureData[featureCount+1]);
         
-        System.err.println("enemy armor:" + featureData[featureCount+2]);
-        System.err.println("enemy hp : " + featureData[featureCount+3]);
+        System.err.println("enemy armor:" + featureData[featureCount+4]);
+        System.err.println("enemy hp : " + featureData[featureCount+5]);
         
         
         System.err.println("my board minions:");

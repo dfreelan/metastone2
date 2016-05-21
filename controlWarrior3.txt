@@ -1,0 +1,12 @@
+am playing
+04:18:39 INFO  - ./training folder created
+cats
+cats
+04:19:22 INFO  - Starting simulation on 4 cores
+player 1 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!
+player 1 wins!
+player 1 wins!
+player 0 wins!

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.demilich.metastone.game.GameContext;
 import net.demilich.metastone.game.Player;
+import net.demilich.metastone.game.actions.ActionType;
 import net.demilich.metastone.game.actions.GameAction;
 import net.demilich.metastone.game.behaviour.Behaviour;
 import net.demilich.metastone.game.behaviour.IBehaviour;
@@ -41,18 +42,26 @@ public class PlayWithCritique extends Behaviour {
 
     @Override
     public GameAction requestAction(GameContext context, Player player, List<GameAction> validActions) {
-
+        System.err.println("HAPPENED");
+        if(validActions.get(0).getActionType() == ActionType.BATTLECRY){
+            return validActions.get(0);
+        }
         int playerID = player.getId();
         double bestScore = -1;
         GameAction bestAction = null;
         GameContext bestContext = null;
         for (GameAction a : validActions) {
             GameContext simulation = context.clone();
+            System.err.println("SHOULD BE FOLLOWED BY YO");
             simulation.getLogic().performGameAction(player.getId(), a);
+            System.err.println("YO");
             //System.err.println("raw net output: " + critique.getCritique(simulation,simulation.getPlayer(player.getId())));
             double score = critique.getCritique(simulation,simulation.getPlayer(player.getId()));
-            
-            //System.err.println("the score for whatever is: " + score);
+           
+            System.err.println("the score for whatever is: " + score + " "  + a);
+            if(a.toString().contains("Coin")){
+                score = 1000;
+            }
             if (score > bestScore) {
                 bestScore = score;
                 bestAction = a;
@@ -60,7 +69,7 @@ public class PlayWithCritique extends Behaviour {
             }
         }
         
-        //System.err.println(" i chose " + bestAction);
+        System.err.println(" i chose " + bestAction);
         decisionList.add(bestContext);
         decisionScores.add(bestScore);
 
